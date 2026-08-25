@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #f3ece0;           /* page background (beige) */
+  --color-panel: #fbf7ef;         /* cards & surfaces (cream) */
+  --color-raise: #efe4d2;         /* raised / hover / inputs (tan) */
+  --color-line: #ddccb0;          /* borders & dividers (sand) */
+  --color-amber: #8f6233;         /* primary accent (brown) */
+  --color-amberl: #c89f6b;        /* light accent (tan) */
+  --color-copper: #74482a;        /* deep accent (dark brown) */
+  --color-frost: #3b2f23;         /* primary text (dark brown) */
+  --color-ash: #6e5b45;           /* secondary text (brown) */
+  --color-dim: #99856b;           /* muted text (light brown) */
+  --color-jade: #3f8a66;          /* success / inflow (muted green) */
+  --color-rose: #b24c3b;          /* danger / outflow (terracotta) */
+  --color-skyx: #7a6a4f;          /* info (taupe) */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: var(--color-ink);
+  background-image:
+    radial-gradient(1100px 500px at 88% -8%, rgba(143, 98, 51, 0.08), transparent 60%),
+    radial-gradient(900px 450px at -8% 108%, rgba(63, 138, 102, 0.06), transparent 60%);
+  background-attachment: fixed;
+  color: var(--color-frost);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cebc9f;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #bfa98a;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

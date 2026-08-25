@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: koudi-stock
+    runtime: python
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: gunicorn --chdir backend koudi_backend.wsgi:application --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: NODE_VERSION
+        value: "22"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: DATABASE_URL
+        sync: false
