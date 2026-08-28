@@ -288,6 +288,218 @@ def build_quotation_pdf(so):
     return _build_order_doc(so, "quotation")
 
 
+def _build_purchase_order_doc(po):
+    """Render an official purchase order (bon de commande) for a supplier."""
+    title = "BON DE COMMANDE"
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=14 * mm, bottomMargin=14 * mm,
+        leftMargin=14 * mm, rightMargin=14 * mm,
+    )
+
+    story = []
+
+    # --- Header band ---------------------------------------------------------
+    comp = _company()
+    info_rows = [
+        [Paragraph(comp["address"], _SUB_HEAD), ""],
+        [Paragraph(comp["contact"], _SUB_HEAD), ""],
+        [Paragraph(comp["tax_id"], _SUB_HEAD), ""],
+    ]
+    header_rows = [
+        [
+            Paragraph(f"<b>{comp['name']}</b>", ParagraphStyle(
+                "H1", fontName="Helvetica-Bold", fontSize=20, textColor=colors.HexColor("#74482a"))),
+            Paragraph(f"<b>{title}</b>", ParagraphStyle(
+                "DT", fontName="Helvetica-Bold", fontSize=15, alignment=TA_RIGHT,
+                textColor=colors.HexColor("#3b2f23")),
+            ),
+        ],
+        [
+            Paragraph(comp["tagline"], _SUB_HEAD),
+            Paragraph(
+                f"{title} N° <b>{po.po_number}</b><br/>"
+                f"Date : {po.order_date:%d/%m/%Y}<br/>"
+                f"Statut : <b>{po.get_status_display()}</b>",
+                ParagraphStyle("DTR", parent=_P, alignment=TA_RIGHT),
+            ),
+        ],
+    ] + [row for row in info_rows if row[0].text]
+    header = Table(header_rows, colWidths=[doc.width * 0.55, doc.width * 0.45])
+    header.setStyle(TableStyle([
+        ("SPAN", (0, 0), (1, 0)),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor("#8f6233")),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 6 * mm))
+
+    # --- Supplier + warehouse ------------------------------------------------
+    expected = f"<br/>Livraison prévue : {po.expected_date:%d/%m/%Y}" if po.expected_date else ""
+    info = Table(
+        [
+            [
+                Paragraph("<b>FOURNISSEUR</b>", _SUB_HEAD),
+                Paragraph("<b>DÉPÔT / RÉCEPTION</b>", _SUB_HEAD),
+                Paragraph("<b>RÉFÉRENCES</b>", _SUB_HEAD),
+            ],
+            [
+                Paragraph(
+                    f"<b>{po.supplier.company_name}</b><br/>{po.supplier.contact_name or ''}"
+                    f"<br/>{po.supplier.address or ''}<br/>{po.supplier.tax_id or ''}"
+                    f"<br/>{po.supplier.phone or ''}",
+                    _P,
+                ),
+                Paragraph(f"{po.warehouse.name}<br/>{po.warehouse.address or ''}", _P),
+                Paragraph(
+                    f"Fournisseur : {po.supplier.code}<br/>Commande : {po.po_number}"
+                    f"<br/>Devise : {po.currency or 'MAD'}{expected}", _P,
+                ),
+            ],
+        ],
+        colWidths=[doc.width * 0.40, doc.width * 0.30, doc.width * 0.30],
+    )
+    info.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#efe4d2")),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.4, colors.HexColor("#ddccb0")),
+        ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(info)
+    story.append(Spacer(1, 6 * mm))
+
+    # --- Line items ----------------------------------------------------------
+    style = getSampleStyleSheet()
+    line_style = ParagraphStyle("LT", parent=style["BodyText"], fontSize=7.5, leading=9)
+    head_style = ParagraphStyle(
+        "TH", parent=line_style, fontName="Helvetica-Bold", textColor=colors.white,
+    )
+
+    table_data = [[
+        Paragraph("RÉF", head_style),
+        Paragraph("DÉSIGNATION", head_style),
+        Paragraph("DIMENSIONS (mm)", head_style),
+        Paragraph("QTÉ", head_style),
+        Paragraph("VOLUME (m³)", head_style),
+        Paragraph("PU (MAD/m³)", head_style),
+        Paragraph("MONTANT", head_style),
+    ]]
+
+    total_volume = Decimal("0")
+    subtotal = Decimal("0")
+    for item in po.items.all():
+        vol = compute_volume_m3(
+            item.product.thickness_mm, item.product.width_mm, item.product.length_mm, item.quantity_ordered
+        ) or Decimal("0")
+        total_volume += vol
+        subtotal += Decimal(str(item.line_total))
+        table_data.append([
+            Paragraph(item.product.sku, line_style),
+            Paragraph(item.product.name, line_style),
+            Paragraph(item.product.dimensions_display, line_style),
+            Paragraph(_num(item.quantity_ordered, 0), line_style),
+            Paragraph(_num(vol, 4), line_style),
+            Paragraph(_num(item.unit_price, 2), line_style),
+            Paragraph(_money(item.line_total), line_style),
+        ])
+
+    fees = po.total_fees
+    landed = subtotal + fees
+
+    table_data.append([
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("<b>SOUS-TOTAL</b>", line_style),
+        Paragraph(_money(subtotal), line_style),
+    ])
+    if fees > 0:
+        fee_rows = [
+            ("FRET", po.freight_cost),
+            ("DOUANE", po.customs_cost),
+            ("MANUTENTION", po.handling_cost),
+        ]
+        for f_label, f_value in fee_rows:
+            if f_value > 0:
+                table_data.append([
+                    Paragraph("", line_style),
+                    Paragraph("", line_style),
+                    Paragraph("", line_style),
+                    Paragraph("", line_style),
+                    Paragraph("", line_style),
+                    Paragraph(f_label, line_style),
+                    Paragraph(_money(f_value), line_style),
+                ])
+        table_data.append([
+            Paragraph("", line_style),
+            Paragraph("", line_style),
+            Paragraph("", line_style),
+            Paragraph("", line_style),
+            Paragraph("", line_style),
+            Paragraph("<b>TOTAL FRET & DOUANE</b>", line_style),
+            Paragraph(_money(fees), line_style),
+        ])
+    table_data.append([
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("<b>COÛT TOTAL (REVIENT)</b>", line_style),
+        Paragraph(f"<b>{_money(landed)}</b>", line_style),
+    ])
+
+    lines_table = Table(table_data, colWidths=[
+        doc.width * 0.10, doc.width * 0.28, doc.width * 0.15,
+        doc.width * 0.08, doc.width * 0.11, doc.width * 0.14, doc.width * 0.14,
+    ], repeatRows=1)
+    lines_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#74482a")),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("BACKGROUND", (0, -4), (-1, -1), colors.HexColor("#f6f0e4")),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(lines_table)
+    story.append(Spacer(1, 3 * mm))
+    story.append(Paragraph(
+        f"<b>Volume total bois : {_num(total_volume, 4)} m³</b>",
+        ParagraphStyle("VOL", parent=_SUB_HEAD, fontSize=9),
+    ))
+    story.append(Spacer(1, 3 * mm))
+    if po.notes:
+        story.append(Paragraph(
+            f"<b>Notes :</b> {po.notes}",
+            ParagraphStyle("NOTES", parent=_P, fontSize=7.5),
+        ))
+        story.append(Spacer(1, 8 * mm))
+
+    # --- Footer --------------------------------------------------------------
+    story.append(Paragraph(
+        f"<b>Conditions :</b> {po.supplier.payment_terms or 'Paiement selon accord.'}",
+        ParagraphStyle("F", parent=_P, fontSize=7.5),
+    ))
+    footer_bits = [b for b in (comp["name"], comp["address"], comp["tax_id"]) if b]
+    story.append(Paragraph(
+        " — ".join(footer_bits),
+        ParagraphStyle("FB", parent=_P, fontSize=6.5, textColor=colors.HexColor("#99856b")),
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
+
+
+def build_purchase_order_pdf(po):
+    return _build_purchase_order_doc(po)
+
+
 # ---------------------------------------------------------------------------
 # QR bundle labels
 # ---------------------------------------------------------------------------

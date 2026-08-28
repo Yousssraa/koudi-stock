@@ -13,7 +13,7 @@ const fmt = (n, d = 2) =>
     ? "—"
     : Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-function OrderCard({ order, kind }) {
+function OrderCard({ order, kind, toast }) {
   const isSale = kind === "sale";
   const party = isSale ? order.client : order.supplier;
   return (
@@ -77,7 +77,7 @@ function OrderCard({ order, kind }) {
           ))}
         </tbody>
       </table>
-      {isSale && (
+      {isSale ? (
         <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3">
           <PdfButton
             label="Devis PDF"
@@ -99,6 +99,24 @@ function OrderCard({ order, kind }) {
                 toast.success("Facture téléchargée.");
               } catch (_) {
                 toast.error("Échec du téléchargement de la facture.");
+              }
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3">
+          <PdfButton
+            label="Bon de commande PDF"
+            accent
+            onClick={async () => {
+              try {
+                await downloadPdf(
+                  `/purchase-orders/${order.id}/pdf/`,
+                  `${order.po_number}_BON_DE_COMMANDE.pdf`
+                );
+                toast.success("Bon de commande téléchargé.");
+              } catch (_) {
+                toast.error("Échec du téléchargement du bon de commande.");
               }
             }}
           />
@@ -216,7 +234,7 @@ export default function Transactions() {
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} kind={tab} />
+            <OrderCard key={o.id} order={o} kind={tab} toast={toast} />
           ))}
         </div>
       )}

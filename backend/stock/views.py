@@ -71,6 +71,17 @@ def _pdf_response(pdf_bytes, filename):
     return response
 
 
+def _next_contact_code(model, prefix):
+    """Auto-numbered contact code (CLI-0001 / SUP-0001) when none supplied."""
+    last = model.objects.filter(code__startswith=f"{prefix}-").order_by("-code").first()
+    if last is not None:
+        try:
+            return f"{prefix}-{int(last.code.rsplit('-', 1)[1]) + 1:04d}"
+        except (IndexError, ValueError):
+            pass
+    return f"{prefix}-0001"
+
+
 class WoodTypeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WoodType.objects.filter(is_active=True)
     serializer_class = WoodTypeSerializer
@@ -253,10 +264,22 @@ class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(
+            code=_next_contact_code(Supplier, "SUP") if not serializer.validated_data.get("code")
+            else serializer.validated_data["code"]
+        )
+
 
 class ClientViewSet(viewsets.ModelViewSet):
     queryset = Client.objects.all()
     serializer_class = ClientSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            code=_next_contact_code(Client, "CLI") if not serializer.validated_data.get("code")
+            else serializer.validated_data["code"]
+        )
 
     @action(detail=True, methods=["get"])
     def credit(self, request, pk=None):
@@ -273,6 +296,15 @@ class ClientViewSet(viewsets.ModelViewSet):
 class PurchaseOrderViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PurchaseOrder.objects.select_related("supplier", "warehouse").prefetch_related("items__product")
     serializer_class = PurchaseOrderSerializer
+
+    @action(detail=True, methods=["get"])
+    def pdf(self, request, pk=None):
+        """Download an official purchase order (bon de commande) PDF."""
+        po = self.get_object()
+        audit("download", "purchase_order", po.pk, po.po_number, {"document": "purchase_order"})
+        return _pdf_response(
+            pdfs.build_purchase_order_pdf(po), f"{po.po_number}_BON_DE_COMMANDE.pdf"
+        )
 
 
 class SalesOrderViewSet(viewsets.ReadOnlyModelViewSet):

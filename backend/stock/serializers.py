@@ -178,6 +178,8 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
 
 class SupplierSerializer(serializers.ModelSerializer):
+    code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     class Meta:
         model = Supplier
         fields = [
@@ -187,6 +189,7 @@ class SupplierSerializer(serializers.ModelSerializer):
 
 
 class ClientSerializer(serializers.ModelSerializer):
+    code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     outstanding = serializers.SerializerMethodField()
     overdue = serializers.SerializerMethodField()
     available_credit = serializers.SerializerMethodField()

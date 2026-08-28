@@ -4,6 +4,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Inventory from "./pages/Inventory.jsx";
 import Transactions from "./pages/Transactions.jsx";
 import Clients from "./pages/Clients.jsx";
+import Contacts from "./pages/Contacts.jsx";
+import Settings from "./pages/Settings.jsx";
 import Drying from "./pages/Drying.jsx";
 import Archive from "./pages/Archive.jsx";
 import Audit from "./pages/Audit.jsx";
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="inventory" element={<Inventory />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="clients" element={<Clients />} />
+        <Route path="contacts" element={<Contacts />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="drying" element={<Drying />} />
         <Route path="archive" element={<Archive />} />
         <Route path="audit" element={<Audit />} />

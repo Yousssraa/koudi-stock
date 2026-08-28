@@ -11,6 +11,8 @@ const NAV = [
   { to: "/inventory", label: "Inventaire", icon: "▦" },
   { to: "/transactions", label: "Ventes & Achats", icon: "⇄" },
   { to: "/clients", label: "Clients & Crédit", icon: "✉" },
+  { to: "/contacts", label: "Contacts", icon: "👥" },
+  { to: "/settings", label: "Paramètres", icon: "⚙" },
   { to: "/drying", label: "Séchage & Séchoir", icon: "♨" },
   { to: "/archive", label: "Archives", icon: "🗄" },
   { to: "/audit", label: "Journal d'Audit", icon: "✍" },
