@@ -4,6 +4,7 @@ import api from "../../api/client.js";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
 import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
+import { usagesFor } from "../../site/usages.js";
 
 const CATEGORY_COPY = {
   "Bois de Construction": "Bois de construction",
@@ -70,6 +71,8 @@ export default function Produit() {
   }
 
   const unites = p.is_panel && p.surface_m2 ? `${Number(p.surface_m2).toFixed(2)} m²` : `${p.volume_cubic_m} m³`;
+
+  const usage = usagesFor(p);
 
   const specRows = [
     { label: "Catégorie", value: CATEGORY_COPY[p.category] || p.category },
@@ -150,6 +153,43 @@ export default function Produit() {
             </div>
           </div>
         </div>
+
+        {/* Exemples d'utilisation */}
+        <section className="mt-14">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-display text-2xl font-bold tracking-tight text-frost">
+                Exemples d'utilisation — {usage.title}
+              </h2>
+              <p className="mt-1 text-sm text-ash">
+                Voici quelques exemples de réalisations possibles avec {p.wood_type_name || p.category}.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {usage.uses.map((u, i) => (
+              <div key={i} className="group overflow-hidden rounded-xl bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5">
+                <div className="relative h-44 overflow-hidden">
+                  <img src={u.img} alt={u.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <span className="absolute left-3 top-3 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur">
+                    Exemple d'usage
+                  </span>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-display text-base font-bold text-frost">{u.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ash">{u.desc}</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {u.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-amber/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber ring-1 ring-amber/20">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Related products — same essence */}
         {related.length > 0 && (
