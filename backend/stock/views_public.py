@@ -139,6 +139,9 @@ class PublicCompanyView(APIView):
                 "email": profile.email,
                 "ice": profile.ice,
                 "registre_commerce": profile.registre_commerce,
+                "identifiant_fiscal": profile.identifiant_fiscal or None,
+                "patente": profile.patente or None,
+                "cnss": profile.cnss or None,
             }
         )
 

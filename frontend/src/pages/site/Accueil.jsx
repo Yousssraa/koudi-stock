@@ -39,11 +39,15 @@ const STATS = [
   { value: "48h", label: "LIVRAISON SUR LE MAROC" },
 ];
 
+const ABOUT =
+  "KOUDI WOOD est un importateur et distributeur de bois massifs, panneaux et matériaux de construction basé à Casablanca. Nous approvisionnons artisans, menuisiers et professionnels du BTP sur tout le royaume : bois rouges et blancs, essences exotiques et nobles, panneaux décoratifs et produits de coffrage. Découpe sur mesure, conseil technique et livraison rapide font de KOUDI WOOD votre partenaire bois de confiance.";
+
 export default function Accueil() {
   useDocumentTitle("KOUDI WOOD — IMPORTATEUR & DISTRIBUTEUR DE BOIS ET MATÉRIAUX DE CONSTRUCTION");
   const t = useT();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [company, setCompany] = useState(null);
   const [loadErr, setLoadErr] = useState(null);
 
   useEffect(() => {
@@ -54,6 +58,10 @@ export default function Accueil() {
     api
       .get("/public/products/?in_stock=1")
       .then((r) => setProducts(r.data))
+      .catch(() => {});
+    api
+      .get("/public/company/")
+      .then((r) => setCompany(r.data))
       .catch(() => {});
   }, []);
 
@@ -134,6 +142,111 @@ export default function Accueil() {
               <p className="mt-2 text-xs font-medium uppercase tracking-[0.15em] text-white/90">{s.label}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* La société */}
+      <section className="mx-auto max-w-7xl px-4 py-16 lg:px-6">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
+          <div className="lg:pr-8">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-frost sm:text-3xl">
+              <span className="border-b-4 border-amber pb-1">{company?.name || "KOUDI WOOD"}</span>
+            </h2>
+            {company?.tagline && (
+              <p className="mt-4 font-display text-lg font-semibold text-amber">{company.tagline}</p>
+            )}
+            <p className="mt-4 text-justify text-sm leading-relaxed text-ash">{ABOUT}</p>
+            <Link
+              to="/contact"
+              className="mt-6 inline-block rounded-lg bg-amber px-6 py-2.5 text-sm font-semibold text-ink shadow transition hover:brightness-110"
+            >
+              Nous contacter →
+            </Link>
+          </div>
+
+          <div className="rounded-2xl bg-panel p-6 ring-1 ring-line sm:p-8">
+            <h3 className="font-display mb-5 text-sm font-bold uppercase tracking-[0.15em] text-frost">
+              Informations de la société
+            </h3>
+            <dl className="space-y-4 text-sm">
+              {company?.address && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">📍</span>
+                  <div>
+                    <dt className="text-dim">Adresse</dt>
+                    <dd className="text-frost">{company.address}</dd>
+                  </div>
+                </div>
+              )}
+              {company?.phone && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">☎</span>
+                  <div>
+                    <dt className="text-dim">Téléphone</dt>
+                    <dd className="text-frost">
+                      <a href={`tel:${company.phone}`} className="transition hover:text-amber">{company.phone}</a>
+                    </dd>
+                  </div>
+                </div>
+              )}
+              {company?.email && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">✉</span>
+                  <div>
+                    <dt className="text-dim">Email</dt>
+                    <dd className="text-frost">
+                      <a href={`mailto:${company.email}`} className="transition hover:text-amber">{company.email}</a>
+                    </dd>
+                  </div>
+                </div>
+              )}
+              {company?.ice && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">🛡</span>
+                  <div>
+                    <dt className="text-dim">ICE</dt>
+                    <dd className="text-frost">{company.ice}</dd>
+                  </div>
+                </div>
+              )}
+              {company?.registre_commerce && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">📋</span>
+                  <div>
+                    <dt className="text-dim">Registre de commerce</dt>
+                    <dd className="text-frost">{company.registre_commerce}</dd>
+                  </div>
+                </div>
+              )}
+              {company?.identifiant_fiscal && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">🧾</span>
+                  <div>
+                    <dt className="text-dim">Identifiant fiscal</dt>
+                    <dd className="text-frost">{company.identifiant_fiscal}</dd>
+                  </div>
+                </div>
+              )}
+              {company?.patente && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">🏢</span>
+                  <div>
+                    <dt className="text-dim">Patente</dt>
+                    <dd className="text-frost">{company.patente}</dd>
+                  </div>
+                </div>
+              )}
+              {company?.cnss && (
+                <div className="flex gap-3">
+                  <span aria-hidden className="mt-0.5">👷</span>
+                  <div>
+                    <dt className="text-dim">CNSS</dt>
+                    <dd className="text-frost">{company.cnss}</dd>
+                  </div>
+                </div>
+              )}
+            </dl>
+          </div>
         </div>
       </section>
 
