@@ -51,7 +51,8 @@ class ProductWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "sku", "name", "wood_type", "category", "length_mm", "width_mm",
+            "id", "sku", "name", "colis_number", "wood_type", "category", "piece_type",
+            "treatment", "length_m", "width_mm",
             "thickness_mm", "grade", "finish", "moisture_content", "volume_cubic_m",
             "uom", "cost_price", "sale_price", "currency", "min_stock_qty",
             "reorder_threshold_m3", "is_active",
@@ -62,11 +63,11 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         computed = compute_volume_m3(
             attrs.get("thickness_mm"),
             attrs.get("width_mm"),
-            attrs.get("length_mm"),
+            attrs.get("length_m"),
         )
         if computed is None and self.instance is None:
             raise serializers.ValidationError(
-                {"dimensions": "Thickness, width and length (mm) are required to compute the volume."}
+                {"dimensions": "Epaisseur, largeur (mm) et longueur (m) sont requises pour calculer le volume."}
             )
         return attrs
 
@@ -85,16 +86,24 @@ class ProductSerializer(ProductWriteSerializer):
     stock_volume_m3 = serializers.SerializerMethodField()
     below_reorder = serializers.SerializerMethodField()
     landed_cost_per_m3 = serializers.SerializerMethodField()
+    is_panel = serializers.BooleanField(read_only=True)
+    surface_m2 = serializers.SerializerMethodField()
 
     class Meta(ProductWriteSerializer.Meta):
         fields = ProductWriteSerializer.Meta.fields + [
             "wood_type_id", "dimensions_display", "total_stock_qty",
             "total_stock_volume_m3", "stock_status", "moisture_status",
             "stock_by_warehouse", "stock_volume_m3", "below_reorder",
-            "landed_cost_per_m3",
+            "landed_cost_per_m3", "is_panel", "surface_m2",
         ]
         read_only_fields = ["volume_cubic_m", "dimensions_display", "total_stock_qty", "stock_status"]
         extra_kwargs = {"wood_type_id": {"write_only": True}}
+
+    def get_surface_m2(self, obj):
+        if not obj.is_panel:
+            return None
+        v = obj.surface_m2
+        return None if v is None else float(v)
 
     def get_landed_cost_per_m3(self, obj):
         v = services.landed_cost_per_m3(obj)
@@ -129,7 +138,7 @@ class ProductSerializer(ProductWriteSerializer):
                 "warehouse_name": inv.warehouse.name if inv.warehouse_id else None,
                 "quantity": float(inv.quantity),
                 "volume_m3": float(
-                    compute_volume_m3(obj.thickness_mm, obj.width_mm, obj.length_mm, inv.quantity)
+                    compute_volume_m3(obj.thickness_mm, obj.width_mm, obj.length_m, inv.quantity)
                 ) if inv.quantity else 0,
             }
             for inv in obj.inventory_set.all()
@@ -151,7 +160,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     def get_volume_m3(self, obj):
         v = compute_volume_m3(
-            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_mm, obj.quantity
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity
         )
         return None if v is None else float(v)
 
@@ -246,7 +255,7 @@ class PurchaseOrderItemSerializer(serializers.ModelSerializer):
 
     def get_volume_m3(self, obj):
         v = compute_volume_m3(
-            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_mm, obj.quantity_ordered
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity_ordered
         )
         return None if v is None else float(v)
 
@@ -309,7 +318,7 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
 
     def get_volume_m3(self, obj):
         v = compute_volume_m3(
-            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_mm, obj.quantity_ordered
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity_ordered
         )
         return None if v is None else float(v)
 
@@ -328,7 +337,7 @@ class SalesOrderItemSerializer(serializers.ModelSerializer):
         if landed is None:
             return None
         volume = compute_volume_m3(
-            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_mm, obj.quantity_ordered
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity_ordered
         ) or ZERO
         return float(((obj.unit_price - landed) * volume).quantize(Decimal("0.01")))
 
@@ -377,7 +386,7 @@ class SalesOrderSerializer(serializers.ModelSerializer):
             if landed is None:
                 continue
             volume = compute_volume_m3(
-                item.product.thickness_mm, item.product.width_mm, item.product.length_mm, item.quantity_ordered
+                item.product.thickness_mm, item.product.width_mm, item.product.length_m, item.quantity_ordered
             ) or Decimal("0")
             total += landed * volume
         return total
@@ -405,7 +414,7 @@ class TransactionItemSerializer(serializers.Serializer):
     )
     thickness_mm = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, min_value=Decimal("0"))
     width_mm = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, min_value=Decimal("0"))
-    length_mm = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, min_value=Decimal("0"))
+    length_m = serializers.DecimalField(max_digits=10, decimal_places=3, required=False, min_value=Decimal("0"))
     lot_number = serializers.CharField(required=False, allow_blank=True)
 
 
@@ -516,7 +525,7 @@ class MonthlyArchiveSerializer(serializers.ModelSerializer):
     def get_volume_m3(self, obj):
         from .models import compute_volume_m3
         v = compute_volume_m3(
-            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_mm, obj.closing_qty
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.closing_qty
         )
         return None if v is None else float(v)
 
@@ -684,7 +693,7 @@ class DryingBatchSerializer(serializers.ModelSerializer):
         if kiln is None or product is None:
             return attrs
         volume = compute_volume_m3(
-            product.thickness_mm, product.width_mm, product.length_mm, quantity
+            product.thickness_mm, product.width_mm, product.length_m, quantity
         ) or Decimal("0")
         available = Decimal(str(kiln.available_m3))
         if volume > available:
@@ -846,18 +855,28 @@ class PublicProductSerializer(serializers.ModelSerializer):
     species_category = serializers.CharField(source="wood_type.category", read_only=True, default=None)
     dimensions_display = serializers.CharField(read_only=True)
     volume_cubic_m = serializers.SerializerMethodField()
+    is_panel = serializers.BooleanField(read_only=True)
+    surface_m2 = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            "id", "sku", "name", "category", "wood_type_name", "species_category",
-            "length_mm", "width_mm", "thickness_mm", "grade", "finish",
+            "id", "sku", "name", "colis_number", "category", "piece_type", "treatment",
+            "wood_type_name", "species_category",
+            "length_m", "width_mm", "thickness_mm", "grade", "finish",
             "moisture_content", "volume_cubic_m", "dimensions_display",
             "uom", "sale_price", "currency", "total_stock_qty", "stock_status",
+            "is_panel", "surface_m2",
         ]
 
     def get_volume_cubic_m(self, obj):
         v = obj.volume_cubic_m
+        return None if v is None else float(v)
+
+    def get_surface_m2(self, obj):
+        if not obj.is_panel:
+            return None
+        v = obj.surface_m2
         return None if v is None else float(v)
 
 

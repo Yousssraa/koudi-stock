@@ -13,6 +13,8 @@ from django.core.management.base import BaseCommand
 from stock.models import (
     AuditLog,
     Client,
+    DeliveryNote,
+    DeliveryNoteItem,
     DryingBatch,
     Inventory,
     Kiln,
@@ -36,6 +38,8 @@ MODELS = [
     SalesOrder,
     PurchaseOrderItem,
     PurchaseOrder,
+    DeliveryNoteItem,
+    DeliveryNote,
     StockMovement,
     Inventory,
     DryingBatch,

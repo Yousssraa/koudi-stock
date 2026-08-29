@@ -236,7 +236,7 @@ for (sku, name, sp, cat, grade, finish, t, w, l, mc, cost, sale, min_q, sup, _en
             "finish": finish,
             "thickness_mm": t,
             "width_mm": w,
-            "length_mm": l,
+            "length_m": Decimal(l) / Decimal("1000"),
             "moisture_content": mc,
             "cost_price": Decimal(cost),
             "sale_price": Decimal(sale),

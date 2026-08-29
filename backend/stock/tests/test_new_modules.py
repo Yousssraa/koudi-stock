@@ -39,8 +39,8 @@ from stock.models import (
 
 User = get_user_model()
 
-PANEL = {"thickness_mm": 18, "width_mm": 2500, "length_mm": 1220, "category": "Panneaux"}
-SMALL = {"thickness_mm": 27, "width_mm": 40, "length_mm": 3000, "category": "Bois rouge"}
+PANEL = {"thickness_mm": 18, "width_mm": 1220, "length_m": Decimal("2.44"), "category": "Panneaux & Dérivés", "piece_type": "Plywood Filmé"}
+SMALL = {"thickness_mm": 27, "width_mm": 40, "length_m": Decimal("3.0"), "category": "Bois de Construction"}
 
 
 class BaseModulesTest(TestCase):
@@ -191,7 +191,7 @@ class DryingBatchTests(BaseModulesTest):
 
     def _volume_m3(self, qty):
         return compute_volume_m3(
-            SMALL["thickness_mm"], SMALL["width_mm"], SMALL["length_mm"], Decimal(qty)
+            SMALL["thickness_mm"], SMALL["width_mm"], SMALL["length_m"], Decimal(qty)
         )
 
     def _batch(self, qty=100, energy=Decimal("324")):
@@ -374,7 +374,7 @@ class LandedCostAndSaleTests(BaseModulesTest):
 
     def test_sale_tier_discount_and_margins(self):
         client = self.make_client("CLI-SALE-1")
-        product = self.buy_panel_stock()  # 600 * 0.0549 m³
+        product = self.buy_panel_stock()  # 600 × 0.0536 m³
         qty = 546  # ~ 29.97 m³ -> Tarif gros (-5%)
         r = self.api.post("/api/sales/", {
             "client_id": client.pk, "warehouse_id": self.wh.pk,
@@ -538,7 +538,7 @@ class DeliveryNoteTests(BaseModulesTest):
         so = r.data
         self.assertEqual(so["status"], "preparation")
         self.assertTrue(so["bl_number"].startswith("BL"))
-        # 18 * PANEL volume (compute_volume_m3(18,2500,1220,1) = 0.0549)
+        # 18 × PANEL volume (compute_volume_m3(18,1220,2.44,1) ≈ 0.0536)
         self.assertGreater(float(so["total_volume_m3"]), 0)
 
         # stock decremented by the sale_out trigger

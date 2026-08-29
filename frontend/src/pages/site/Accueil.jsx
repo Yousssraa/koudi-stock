@@ -6,29 +6,21 @@ import { useT } from "../../site/i18n.jsx";
 import { categoryImage, productImage } from "../../site/utils.js";
 
 const CATEGORY_COPY = {
-  "Bois rouge": {
-    title: "Bois rouges & industriels",
-    d: "Pins des pays nordiques, clairs et résineux. Nous vous proposons une large variété de bois pour la menuiserie, la charpente et l'industrie, en mesure de répondre à tous vos besoins.",
+  "Bois de Construction": {
+    title: "Bois de construction",
+    d: "Madriers, bastaings, chevrons, voliges, poteaux et rondins en pin sylvestre et sapin du Nord. Du bois de charpente et d'ossature au meilleur rapport prix/m³.",
   },
-  "Bois blanc": {
-    title: "Bois blancs & épicéa",
-    d: "L'épicéa et le sapin pour ossature, charpente légère et lambris. Des essences claires et saines, idéales pour vos projets de construction à ossature bois.",
+  "Bois Traité Autoclave": {
+    title: "Bois traité autoclave",
+    d: "Madriers, chevrons, poteaux carrés et lames de terrasse traités Cl.3 vert ou Cl.4 marron. Des essences durables pour les usages extérieurs et le contact sol.",
   },
-  "Bois exotique": {
-    title: "Bois exotiques",
-    d: "Sapelli, iroko, kossipo, dibétou : des essences tropicales durables pour la menuiserie extérieure et l'aménagement haut de gamme.",
+  "Bois Feuillus & Nobles": {
+    title: "Feuillus & bois nobles",
+    d: "Chêne, hêtre étuvé et iroko : des essences nobles pour l'ébénisterie, la menuiserie de précision et les réalisations d'exception.",
   },
-  "Bois noble": {
-    title: "Bois nobles",
-    d: "Chêne, noyer et autres essences nobles pour des réalisations d'exception. Une sélection rigoureuse pour l'ébénisterie et la menuiserie de précision.",
-  },
-  "Panneaux": {
-    title: "Panneaux décoratifs & industriels",
-    d: "Contreplaqués, MDF, OSB, latté et stratifié : un stock impressionnant de panneaux aux dimensions et finitions variées, au meilleur prix.",
-  },
-  "Coffrage": {
-    title: "Produits de coffrage",
-    d: "Panneaux de coffrage, bakélisés et poutrelles pour le BTP. Des produits adaptés à l'industrie de la construction, livrés rapidement sur chantier.",
+  "Panneaux & Dérivés": {
+    title: "Panneaux & dérivés",
+    d: "Plywood filmé, contreplaqués et panneaux aux dimensions standard 1,22 × 2,44 m. Une gamme complète pour vos chantiers et vos finitions.",
   },
 };
 
@@ -72,7 +64,7 @@ export default function Accueil() {
       {/* HERO — full-bleed banner */}
       <section
         className="relative flex min-h-[70vh] items-center justify-center bg-cover bg-center"
-        style={{ backgroundImage: `url(${categoryImage("Bois noble")})` }}
+        style={{ backgroundImage: `url(${categoryImage("Bois Feuillus & Nobles")})` }}
       >
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative mx-auto max-w-4xl px-4 py-24 text-center lg:px-6">
@@ -132,7 +124,7 @@ export default function Accueil() {
       {/* STATS BAND */}
       <section
         className="relative bg-cover bg-center py-16"
-        style={{ backgroundImage: `url(${categoryImage("Coffrage")})` }}
+        style={{ backgroundImage: `url(${categoryImage("Bois Traité Autoclave")})` }}
       >
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 text-center lg:grid-cols-4 lg:px-6">
@@ -269,7 +261,7 @@ export default function Accueil() {
               {featured.map((p) => (
                 <Link
                   key={p.id}
-                  to={`/categorie/${encodeURIComponent(p.category || "Panneaux")}?produit=${p.id}`}
+                  to={`/categorie/${encodeURIComponent(p.category || "Panneaux & Dérivés")}?produit=${p.id}`}
                   className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">

@@ -8,12 +8,10 @@ import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
 const PAGE_SIZE = 12;
 
 const CATEGORY_COPY = {
-  "Bois rouge": { title: "Bois rouges (pins nordiques)", d: "Des pins clairs et résineux, très appréciés pour la menuiserie et la charpente." },
-  "Bois blanc": { title: "Bois blancs (épicéa)", d: "L'épicéa et le sapin pour ossature, charpente légère et lambris." },
-  "Bois exotique": { title: "Bois exotiques", d: "Sapelli, iroko, kossipo, dibétou : des essence tropicales durables." },
-  "Bois noble": { title: "Bois nobles", d: "Chêne, noyer et autres essences nobles pour des réalisations d'exception." },
-  "Panneaux": { title: "Panneaux & dérivés", d: "MDF, OSB, contreplaqué, latté et stratifié pour tous vos projets." },
-  "Coffrage": { title: "Coffrage & construction", d: "Panneaux de coffrage, bakélisés et poutrelles pour le BTP." },
+  "Bois de Construction": { title: "Bois de construction", d: "Madriers, bastaings, chevrons, voliges, poteaux et rondins en pin sylvestre et sapin du Nord pour charpente et ossature." },
+  "Bois Traité Autoclave": { title: "Bois traité autoclave", d: "Bois traité Cl.3 vert ou Cl.4 marron, adapté aux usages extérieurs et au contact avec le sol." },
+  "Bois Feuillus & Nobles": { title: "Feuillus & bois nobles", d: "Chêne, hêtre étuvé et iroko : des essences nobles pour l'ébénisterie et la menuiserie de précision." },
+  "Panneaux & Dérivés": { title: "Panneaux & dérivés", d: "Plywood filmé et contreplaqués aux dimensions standard 1,22 × 2,44 m." },
 };
 
 export default function Categorie() {
@@ -116,8 +114,12 @@ export default function Categorie() {
                     <dd className="font-semibold text-frost">{focusProduct.grade || "—"}</dd>
                   </div>
                   <div className="rounded-xl bg-raise/60 p-3">
-                    <dt className="text-dim">Volume / unité</dt>
-                    <dd className="font-semibold text-frost">{focusProduct.volume_cubic_m} m³</dd>
+                    <dt className="text-dim">{focusProduct.is_panel ? "Surface / unité" : "Volume / unité"}</dt>
+                    <dd className="font-semibold text-frost">
+                      {focusProduct.is_panel && focusProduct.surface_m2
+                        ? `${Number(focusProduct.surface_m2).toFixed(2)} m²`
+                        : `${focusProduct.volume_cubic_m} m³`}
+                    </dd>
                   </div>
                 </dl>
                 <div className="mt-6 flex items-center gap-3">

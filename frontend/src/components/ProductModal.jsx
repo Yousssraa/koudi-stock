@@ -2,20 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../api/client.js";
 import { useToast } from "./ToastContext.jsx";
 
-const CATEGORIES = ["Bois rouge", "Bois blanc", "Bois exotique", "Bois noble", "Panneaux", "Coffrage"];
+const CATEGORIES = ["Bois de Construction", "Bois Traité Autoclave", "Bois Feuillus & Nobles", "Panneaux & Dérivés"];
+const PIECE_TYPES = ["Madrier", "Basting", "Chevron", "Volige", "Lame de Terrasse", "Poteau Carré", "Rondin", "Plywood Filmé"];
+const TREATMENTS = ["Aucun", "Autoclave Cl.3 Vert", "Autoclave Cl.4 Marron", "Séché KD (Kiln Dried)"];
 const GRADES = ["FAS", "Cabinet grade", "Select", "Standard", "Construction"];
 const FINISHES = ["rough-sawn", "planed", "poutre", "kiln-dried", "sanded"];
 
 const EMPTY = {
   sku: "",
   name: "",
+  colis_number: "",
   wood_type_id: "",
-  category: "Bois blanc",
+  category: "Bois de Construction",
+  piece_type: "",
+  treatment: "Aucun",
   grade: "FAS",
   finish: "planed",
   thickness_mm: "",
   width_mm: "",
-  length_mm: "",
+  length_m: "",
   moisture_content: "",
   uom: "cbm",
   cost_price: "",
@@ -49,13 +54,16 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
       setForm({
         sku: product.sku || "",
         name: product.name || "",
+        colis_number: product.colis_number ?? "",
         wood_type_id: product.wood_type?.id || "",
-        category: product.category || "Bois blanc",
+        category: product.category || "Bois de Construction",
+        piece_type: product.piece_type || "",
+        treatment: product.treatment || "Aucun",
         grade: product.grade || "FAS",
         finish: product.finish || "planed",
         thickness_mm: product.thickness_mm ?? "",
         width_mm: product.width_mm ?? "",
-        length_mm: product.length_mm ?? "",
+        length_m: product.length_m ?? "",
         moisture_content: product.moisture_content ?? "",
         uom: product.uom || "cbm",
         cost_price: product.cost_price ?? "",
@@ -70,13 +78,19 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
     setError(null);
   }, [open, product]);
 
+  const isPanel = form.category === "Panneaux & Dérivés" || form.piece_type === "Plywood Filmé";
+
   const volumePreview = useMemo(() => {
+    if (isPanel) {
+      const qty = 1;
+      return 1.22 * 2.44 * qty; // surface m² per plate (panneaux)
+    }
     const t = Number(form.thickness_mm);
     const w = Number(form.width_mm);
-    const l = Number(form.length_mm);
+    const l = Number(form.length_m);
     if (![t, w, l].every((v) => Number.isFinite(v) && v > 0)) return null;
-    return (t * w * l) / 1_000_000_000;
-  }, [form.thickness_mm, form.width_mm, form.length_mm]);
+    return (t * w * l) / 1_000_000; // m³
+  }, [form.thickness_mm, form.width_mm, form.length_m, isPanel]);
 
   if (!open) return null;
 
@@ -131,6 +145,10 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
               <input className={input} value={form.name} onChange={set("name")} required placeholder="Chevron Pin 63x175x4000" />
             </div>
             <div>
+              <label className={label}>Colis / Fardeau Ref</label>
+              <input className={input} value={form.colis_number} onChange={set("colis_number")} placeholder="COLIS-01" />
+            </div>
+            <div>
               <label className={label}>Essence</label>
               <select className={input} value={form.wood_type_id} onChange={set("wood_type_id")}>
                 <option value="">— sélectionner —</option>
@@ -143,6 +161,19 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
               <label className={label}>Catégorie</label>
               <select className={input} value={form.category} onChange={set("category")}>
                 {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={label}>Type de Pièce</label>
+              <select className={input} value={form.piece_type} onChange={set("piece_type")}>
+                <option value="">— sélectionner —</option>
+                {PIECE_TYPES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={label}>Traitement</label>
+              <select className={input} value={form.treatment} onChange={set("treatment")}>
+                {TREATMENTS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
@@ -161,27 +192,40 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-dim">
-              Dimensions (mm) — le volume est calculé automatiquement
+              {isPanel
+                ? "Panneau standard 1,22 × 2,44 m — surface automatique en m²"
+                : "Dimensions — le volume (m³) est calculé automatiquement"}
             </p>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className={label}>Épaisseur</label>
-                <input type="number" min="0" step="0.01" className={input} value={form.thickness_mm} onChange={set("thickness_mm")} placeholder="30" />
+                <label className={label}>Épaisseur (mm)</label>
+                <input type="number" min="0" step="0.1" className={input} value={form.thickness_mm} onChange={set("thickness_mm")} placeholder="18" />
               </div>
               <div>
-                <label className={label}>Largeur</label>
-                <input type="number" min="0" step="0.01" className={input} value={form.width_mm} onChange={set("width_mm")} placeholder="140" />
+                <label className={label}>Largeur (mm)</label>
+                <input type="number" min="0" step="0.1" className={input} value={form.width_mm} onChange={set("width_mm")} placeholder="140" />
               </div>
               <div>
-                <label className={label}>Longueur</label>
-                <input type="number" min="0" step="0.01" className={input} value={form.length_mm} onChange={set("length_mm")} placeholder="3000" />
+                <label className={label}>Longueur (m)</label>
+                <input type="number" min="0" step="0.001" className={input} value={form.length_m} onChange={set("length_m")} placeholder="4.0" />
               </div>
             </div>
             <div className="mt-3 rounded-lg bg-raise px-4 py-2.5 text-sm text-ash ring-1 ring-line">
-              Volume calculé :{" "}
-              <span className="font-bold text-amber">
-                {volumePreview !== null ? `${volumePreview.toFixed(6)} m³ / unité` : "entrez les dimensions"}
-              </span>
+              {isPanel ? (
+                <>
+                  Surface calculée :{" "}
+                  <span className="font-bold text-amber">
+                    {volumePreview !== null ? `${volumePreview.toFixed(4)} m² / unité` : "standard 1,22 × 2,44 m"}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Volume calculé :{" "}
+                  <span className="font-bold text-amber">
+                    {volumePreview !== null ? `${volumePreview.toFixed(6)} m³ / unité` : "entrez les dimensions"}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -207,7 +251,7 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
           </div>
 
           <div className="rounded-lg bg-raise/60 px-4 py-3 ring-1 ring-line">
-            <label className={label}>Seuil de réapprovisionnement (m³)</label>
+            <label className={label}>Alerte Stock Min. (m³)</label>
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
@@ -219,7 +263,7 @@ export default function ProductModal({ open, onClose, onSaved, product }) {
                 placeholder="ex. 5.2"
               />
               <span className="text-xs text-dim">
-                L'alerte "stock bas" se déclenche quand le volume total en dépôt passe sous cette valeur.
+                L'alerte "stock bas" se déclenche quand le volume total en dépôt passe sous ce seuil en m³.
               </span>
             </div>
           </div>

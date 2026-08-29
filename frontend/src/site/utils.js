@@ -14,12 +14,10 @@ const ESSENCE_IMAGE = {
 };
 
 const CATEGORY_IMAGE = {
-  "Bois rouge": "/wood/pin-sylvestre.jpg",
-  "Bois blanc": "/wood/epicea.jpg",
-  "Bois exotique": "/wood/sapelli.jpg",
-  "Bois noble": "/wood/chene.jpg",
-  "Panneaux": "/wood/panneaux.jpg",
-  "Coffrage": "/wood/coffrage.jpg",
+  "Bois de Construction": "/wood/pin-sylvestre.jpg",
+  "Bois Traité Autoclave": "/wood/epicea.jpg",
+  "Bois Feuillus & Nobles": "/wood/chene.jpg",
+  "Panneaux & Dérivés": "/wood/panneaux.jpg",
 };
 
 export function productImage(product) {

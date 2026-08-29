@@ -38,7 +38,7 @@ def _line_volume_m3(product, item, qty):
     return compute_volume_m3(
         item.get("thickness_mm") or product.thickness_mm,
         item.get("width_mm") or product.width_mm,
-        item.get("length_mm") or product.length_mm,
+        item.get("length_m") or product.length_m,
         qty,
     )
 
@@ -226,7 +226,7 @@ def create_sale(client, warehouse, items, order_date=None, currency="MAD", moved
     discount_amount = (subtotal * discount_percent / Decimal("100")).quantize(Decimal("0.0001"))
     so.subtotal = subtotal
     so.discount_amount = discount_amount
-    so.total_amount = subtotal - discount_amount
+    so.total_amount = (subtotal - discount_amount).quantize(Decimal("0.0001"))
     so.save(update_fields=["subtotal", "discount_amount", "total_amount"])
     if order_date is not None:
         dt = _order_datetime(order_date)
@@ -407,7 +407,7 @@ def landed_cost_per_m3(product):
     total_volume = ZERO
     for poi in PurchaseOrderItem.objects.filter(product=product):
         volume = compute_volume_m3(
-            product.thickness_mm, product.width_mm, product.length_mm, poi.quantity_ordered
+            product.thickness_mm, product.width_mm, product.length_m, poi.quantity_ordered
         ) or ZERO
         if volume <= 0:
             continue
@@ -520,7 +520,7 @@ def create_drying_batch(product, quantity, kiln=None, warehouse=None,
         raise ValueError("Un séchoir (kiln) ou un dépôt (warehouse) est requis pour ouvrir un lot.")
 
     volume = compute_volume_m3(
-        product.thickness_mm, product.width_mm, product.length_mm, quantity
+        product.thickness_mm, product.width_mm, product.length_m, quantity
     ) or ZERO
 
     return DryingBatch.objects.create(
@@ -572,7 +572,7 @@ def complete_drying_batch(batch, current_moisture=None):
     vol = batch.initial_volume_m3 or ZERO
     if vol <= 0:
         vol = compute_volume_m3(
-            product.thickness_mm, product.width_mm, product.length_mm, batch.quantity
+            product.thickness_mm, product.width_mm, product.length_m, batch.quantity
         ) or ZERO
     if vol > 0 and (batch.energy_cost or ZERO) > 0:
         bump = (batch.energy_cost / vol).quantize(Decimal("0.01"))

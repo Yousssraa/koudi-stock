@@ -10,13 +10,23 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 
-# Volume (m3) = (Thickness_mm * Width_mm * Length_mm * Quantity) / 1_000_000_000
-BILLION = Decimal("1000000000")
+# Volume (m³) = (Thickness_mm * Width_mm * Length_m * Quantity) / 1_000_000
+#   - Thickness & width in millimetres, length in **metres**.
+# Surface (m²) for panneaux (plywood) = 1.22 * 2.44 * Quantity (2.9768 m²/plate).
+MILLION = Decimal("1000000")
+PANEL_WIDTH_M = Decimal("1.22")
+PANEL_LENGTH_M = Decimal("2.44")
+PANEL_SURFACE_M2 = PANEL_WIDTH_M * PANEL_LENGTH_M
 
 
-def compute_volume_m3(thickness_mm, width_mm, length_mm, quantity=1):
-    """Return volume in cubic metres or ``None`` when dimensions are missing."""
-    dims = (thickness_mm, width_mm, length_mm)
+def compute_volume_m3(thickness_mm, width_mm, length_m, quantity=1):
+    """Return volume in cubic metres or ``None`` when dimensions are missing.
+
+    ``length`` is expressed in **metres** (spec: /1_000_000 with mm for
+    thickness/width). For panel products the caller should instead use
+    :func:`compute_surface_m2`.
+    """
+    dims = (thickness_mm, width_mm, length_m)
     if not all(d is not None and d != "" for d in dims):
         return None
     try:
@@ -25,7 +35,20 @@ def compute_volume_m3(thickness_mm, width_mm, length_mm, quantity=1):
         return None
     if q <= 0:
         return Decimal("0")
-    return (t * w * l * q) / BILLION
+    return (t * w * l * q) / MILLION
+
+
+def compute_surface_m2(quantity=1):
+    """Surface in square metres of standard plywood panels (1.22 × 2.44 m)."""
+    if quantity is None or quantity == "":
+        return None
+    try:
+        q = Decimal(str(quantity))
+    except (TypeError, ValueError, ArithmeticError):
+        return None
+    if q <= 0:
+        return Decimal("0")
+    return PANEL_SURFACE_M2 * q
 
 
 # ---------------------------------------------------------------------------
@@ -81,12 +104,26 @@ class Warehouse(models.Model):
 # ---------------------------------------------------------------------------
 class Product(models.Model):
     class Category(models.TextChoices):
-        REDWOOD = "Bois rouge"        # bois rouges (pin des pays nordiques)
-        WHITEWOOD = "Bois blanc"      # bois blancs (épicéa)
-        EXOTIC = "Bois exotique"      # sapelli, kossipo, dabema, dibétou, iroko…
-        NOBLE = "Bois noble"          # chêne, noyer…
-        PANEL = "Panneaux"            # MDF, OSB, latté, CP, stratifié…
-        FORMWORK = "Coffrage"         # panneaux de coffrage, bakélisé, poutrelle H20
+        CONSTRUCTION = "Bois de Construction"        # madriers, bastaings, chevrons…
+        AUTOCLAVE = "Bois Traité Autoclave"          # Cl.3 vert / Cl.4 marron
+        FEUILLUS_NOBLES = "Bois Feuillus & Nobles"   # chêne, hêtre, iroko…
+        PANNEAUX = "Panneaux & Dérivés"              # plywood, panneaux…
+
+    class PieceType(models.TextChoices):
+        MADRIER = "Madrier"
+        BASTING = "Basting"
+        CHEVRON = "Chevron"
+        VOLIGE = "Volige"
+        LAME_TERRASSE = "Lame de Terrasse"
+        POTEAU_CARRE = "Poteau Carré"
+        RONDIN = "Rondin"
+        PLYWOOD = "Plywood Filmé"
+
+    class Treatment(models.TextChoices):
+        NONE = "Aucun"
+        AUTOCLAVE_CL3_VERT = "Autoclave Cl.3 Vert"
+        AUTOCLAVE_CL4_MARRON = "Autoclave Cl.4 Marron"
+        KILN_DRIED = "Séché KD (Kiln Dried)"
 
     class Grade(models.TextChoices):
         FAS = "FAS"                    # Firsts & Seconds
@@ -111,11 +148,20 @@ class Product(models.Model):
 
     sku = models.TextField(unique=True)
     name = models.TextField()
+    colis_number = models.TextField(
+        blank=True, null=True,
+        help_text="Référence / numéro du colis ou fardeau (Colis/Fardeau Ref).",
+    )
     wood_type = models.ForeignKey(
         WoodType, on_delete=models.PROTECT, null=True, blank=True, db_index=True
     )
     category = models.TextField(blank=True, null=True, choices=Category.choices, db_index=True)
-    length_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    piece_type = models.TextField(blank=True, null=True, choices=PieceType.choices, db_index=True)
+    treatment = models.TextField(blank=True, null=True, choices=Treatment.choices, db_index=True)
+    length_m = models.DecimalField(
+        max_digits=10, decimal_places=3, null=True, blank=True,
+        help_text="Longueur en mètres (formule m³ = T_mm × W_mm × L_m × Qté / 1 000 000).",
+    )
     width_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     thickness_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     grade = models.TextField(blank=True, null=True, choices=Grade.choices, db_index=True)
@@ -133,7 +179,8 @@ class Product(models.Model):
     min_stock_qty = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
     reorder_threshold_m3 = models.DecimalField(
         max_digits=14, decimal_places=4, null=True, blank=True, db_index=True,
-        help_text="Seuil d'alerte de réapprovisionnement en m³. Stock en dessous → alerte.",
+        help_text="Seuil d'alerte de réapprovisionnement en m³ (min stock): le stock total "
+                  "en volume en dessous de ce seuil déclenche l'alerte.",
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -149,14 +196,26 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         # Automatically compute the per-unit volume whenever dimensions change.
-        computed = compute_volume_m3(self.thickness_mm, self.width_mm, self.length_mm)
+        computed = compute_volume_m3(self.thickness_mm, self.width_mm, self.length_m)
         self.volume_cubic_m = computed if computed is not None else self.volume_cubic_m
         super().save(*args, **kwargs)
 
     @property
+    def is_panel(self):
+        return (
+            self.category == self.Category.PANNEAUX
+            or self.piece_type == self.PieceType.PLYWOOD
+        )
+
+    @property
+    def surface_m2(self):
+        """Panneaux surface (m²) = 1.22 × 2.44 × quantity — per unit or per stock."""
+        return compute_surface_m2(1)
+
+    @property
     def dimensions_display(self):
-        if all(x is not None for x in (self.length_mm, self.width_mm, self.thickness_mm)):
-            return f"{self.thickness_mm:g} x {self.width_mm:g} x {self.length_mm:g} mm"
+        if all(x is not None for x in (self.length_m, self.width_mm, self.thickness_mm)):
+            return f"{self.thickness_mm:g} x {self.width_mm:g} x {self.length_m:g} m"
         return "—"
 
     @property
@@ -175,6 +234,8 @@ class Product(models.Model):
     def stock_status(self):
         if self.total_stock_qty <= 0:
             return "out_of_stock"
+        if self.below_reorder:
+            return "low"
         if self.min_stock_qty and self.total_stock_qty < self.min_stock_qty:
             return "low"
         return "in_stock"
@@ -185,7 +246,7 @@ class Product(models.Model):
 
     @property
     def below_reorder(self):
-        """True when a reorder threshold (m³) is set and current stock volume is under it."""
+        """True when an m³ min-stock alert is set and current stock volume is under it."""
         threshold = self.reorder_threshold_m3
         if threshold is None or threshold <= 0:
             return False
@@ -258,7 +319,7 @@ class StockMovement(models.Model):
         return compute_volume_m3(
             self.product.thickness_mm,
             self.product.width_mm,
-            self.product.length_mm,
+            self.product.length_m,
             abs(self.quantity),
         )
 
@@ -867,7 +928,7 @@ class DeliveryNoteItem(models.Model):
         return compute_volume_m3(
             self.product.thickness_mm,
             self.product.width_mm,
-            self.product.length_mm,
+            self.product.length_m,
             self.quantity,
         )
 

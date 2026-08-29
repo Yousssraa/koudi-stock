@@ -159,8 +159,8 @@ def _build_order_doc(so, doc_type):
     table_data = [[
         Paragraph("RÉF", head_style),
         Paragraph("DÉSIGNATION", head_style),
-        Paragraph("DIMENSIONS (mm)", head_style),
-        Paragraph("QTÉ", head_style),
+        Paragraph("DIMENSIONS (t × l × L)", head_style),
+        Paragraph("PIÈCES", head_style),
         Paragraph("VOLUME (m³)", head_style),
         Paragraph("PU (MAD/m³)", head_style),
         Paragraph("MONTANT HT", head_style),
@@ -170,7 +170,7 @@ def _build_order_doc(so, doc_type):
     subtotal = Decimal("0")
     for item in so.items.all():
         vol = compute_volume_m3(
-            item.product.thickness_mm, item.product.width_mm, item.product.length_mm, item.quantity_ordered
+            item.product.thickness_mm, item.product.width_mm, item.product.length_m, item.quantity_ordered
         ) or Decimal("0")
         total_volume += vol
         subtotal += Decimal(str(item.line_total))
@@ -381,8 +381,8 @@ def _build_purchase_order_doc(po):
     table_data = [[
         Paragraph("RÉF", head_style),
         Paragraph("DÉSIGNATION", head_style),
-        Paragraph("DIMENSIONS (mm)", head_style),
-        Paragraph("QTÉ", head_style),
+        Paragraph("DIMENSIONS (t × l × L)", head_style),
+        Paragraph("PIÈCES", head_style),
         Paragraph("VOLUME (m³)", head_style),
         Paragraph("PU (MAD/m³)", head_style),
         Paragraph("MONTANT", head_style),
@@ -392,7 +392,7 @@ def _build_purchase_order_doc(po):
     subtotal = Decimal("0")
     for item in po.items.all():
         vol = compute_volume_m3(
-            item.product.thickness_mm, item.product.width_mm, item.product.length_mm, item.quantity_ordered
+            item.product.thickness_mm, item.product.width_mm, item.product.length_m, item.quantity_ordered
         ) or Decimal("0")
         total_volume += vol
         subtotal += Decimal(str(item.line_total))
@@ -598,8 +598,8 @@ def build_delivery_note_pdf(bl, include_signatures=True):
     table_data = [[
         Paragraph("RÉF", head_style),
         Paragraph("DÉSIGNATION", head_style),
-        Paragraph("DIMENSIONS (mm)", head_style),
-        Paragraph("QTÉ", head_style),
+        Paragraph("DIMENSIONS (t × l × L)", head_style),
+        Paragraph("PIÈCES", head_style),
         Paragraph("VOLUME (m³)", head_style),
         Paragraph("PU (MAD/m³)", head_style),
         Paragraph("MONTANT HT", head_style),

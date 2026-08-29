@@ -186,7 +186,7 @@ export default function Produits() {
                   {page.map((p) => (
                     <Link
                       key={p.id}
-                      to={`/categorie/${encodeURIComponent(p.category || "Panneaux")}?produit=${p.id}`}
+                      to={`/categorie/${encodeURIComponent(p.category || "Panneaux & Dérivés")}?produit=${p.id}`}
                       className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
                     >
                       <div className="relative h-32 overflow-hidden sm:h-36">

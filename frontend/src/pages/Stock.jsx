@@ -119,7 +119,7 @@ export default function Stock() {
               <tr className="border-b border-line bg-raise">
                 <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Ref</th>
                 <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Essence</th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Dimensions (mm)</th>
+                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Dimensions</th>
                 <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Qté</th>
                 <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Volume (m³)</th>
                 <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Prix unitaire</th>
@@ -133,7 +133,10 @@ export default function Stock() {
                   <td className="px-4 py-3 font-mono text-xs text-ash">{p.sku}</td>
                   <td className="px-4 py-3">
                     <div className="font-semibold text-frost">{p.name}</div>
-                    <div className="text-[11px] text-dim">{p.wood_type?.name || p.category || "—"}</div>
+                    <div className="text-[11px] text-dim">
+                      {[p.wood_type?.name, p.piece_type, p.treatment].filter(Boolean).join(" · ") || p.category || "—"}
+                    </div>
+                    {p.colis_number && <div className="text-[11px] text-amber">Colis {p.colis_number}</div>}
                   </td>
                   <td className="px-4 py-3 text-xs text-ash">{p.dimensions_display || "—"}</td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums text-frost">

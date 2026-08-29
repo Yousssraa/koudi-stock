@@ -142,9 +142,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         if moisture_max:
             qs = qs.filter(moisture_content__lte=Decimal(moisture_max))
 
-        length = params.get("length_mm")
+        length = params.get("length_m")
         if length:
-            qs = qs.filter(length_mm=Decimal(length))
+            qs = qs.filter(length_m=Decimal(length))
+
+        piece_type = params.get("piece_type")
+        if piece_type:
+            qs = qs.filter(piece_type=piece_type)
+
+        treatment = params.get("treatment")
+        if treatment:
+            qs = qs.filter(treatment=treatment)
 
         search = params.get("search")
         if search:
@@ -193,7 +201,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     "volume_cubic_m": float(p.volume_cubic_m) if p.volume_cubic_m else None,
                     "thickness_mm": float(p.thickness_mm) if p.thickness_mm is not None else None,
                     "width_mm": float(p.width_mm) if p.width_mm is not None else None,
-                    "length_mm": float(p.length_mm) if p.length_mm is not None else None,
+                    "length_m": float(p.length_m) if p.length_m is not None else None,
                 }
                 for p in Product.objects.filter(is_active=True)
             ]
@@ -778,7 +786,7 @@ class DryingBatchViewSet(viewsets.ModelViewSet):
         from .models import compute_volume_m3
 
         volume = compute_volume_m3(
-            product.thickness_mm, product.width_mm, product.length_mm, quantity
+            product.thickness_mm, product.width_mm, product.length_m, quantity
         ) or ZERO
 
         batch = serializer.save(

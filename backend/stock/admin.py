@@ -52,10 +52,10 @@ class InventoryInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
-        "sku", "name", "wood_type", "thickness_mm", "width_mm", "length_mm",
+        "sku", "name", "wood_type", "thickness_mm", "width_mm", "length_m",
         "volume_cubic_m", "sale_price", "stock_status",
     )
-    list_filter = ("wood_type", "grade", "finish", "category", "is_active")
+    list_filter = ("wood_type", "grade", "finish", "category", "piece_type", "treatment", "is_active")
     search_fields = ("sku", "name")
     inlines = [InventoryInline]
 
