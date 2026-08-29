@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/client.js";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
 import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
+
+const PAGE_SIZE = 12;
 
 const CATEGORY_COPY = {
   "Bois rouge": { title: "Bois rouges (pins nordiques)", d: "Des pins clairs et résineux, très appréciés pour la menuiserie et la charpente." },
@@ -21,6 +23,8 @@ export default function Categorie() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sort, setSort] = useState("name");
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
   const meta = CATEGORY_COPY[key] || {
     title: key,
@@ -33,12 +37,41 @@ export default function Categorie() {
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api
       .get(`/public/products/?category=${encodeURIComponent(key)}`)
       .then((r) => setProducts(r.data))
       .catch((e) => setError(e.response?.data?.detail || "Erreur de chargement."))
       .finally(() => setLoading(false));
+    setVisible(PAGE_SIZE);
   }, [key]);
+
+  const shown = useMemo(() => {
+    const list = [...products];
+    switch (sort) {
+      case "price_asc":
+        list.sort((a, b) => Number(a.sale_price) - Number(b.sale_price));
+        break;
+      case "price_desc":
+        list.sort((a, b) => Number(b.sale_price) - Number(a.sale_price));
+        break;
+      case "new":
+        list.sort((a, b) => (b.id || 0) - (a.id || 0));
+        break;
+      default:
+        list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+    return list;
+  }, [products, sort]);
+
+  const gridProducts = useMemo(() => {
+    const list = [...products];
+    if (sort === "price_asc") list.sort((a, b) => Number(a.sale_price) - Number(b.sale_price));
+    else if (sort === "price_desc") list.sort((a, b) => Number(b.sale_price) - Number(a.sale_price));
+    else if (sort === "new") list.sort((a, b) => (b.id || 0) - (a.id || 0));
+    else list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    return list.slice(0, visible);
+  }, [products, sort, visible]);
 
   return (
     <div>
@@ -104,44 +137,70 @@ export default function Categorie() {
           </div>
         )}
 
+        {/* Toolbar */}
+        {!loading && products.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-ash">{products.length} produit(s)</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="rounded-lg border border-line bg-panel px-3 py-1.5 text-sm text-frost outline-none transition focus:border-amber/60 focus:ring-2 focus:ring-amber/20"
+            >
+              <option value="name">Nom (A–Z)</option>
+              <option value="price_asc">Prix croissant</option>
+              <option value="price_desc">Prix décroissant</option>
+              <option value="new">Nouveautés</option>
+            </select>
+          </div>
+        )}
+
         {loading ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-72 animate-pulse rounded-2xl bg-raise/70 ring-1 ring-line" />
+              <div key={i} className="h-44 animate-pulse rounded-lg bg-raise/70 ring-1 ring-line" />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="rounded-2xl bg-panel py-20 text-center ring-1 ring-line">
+          <div className="rounded-xl bg-panel py-16 text-center ring-1 ring-line">
             <p className="text-sm text-ash">Aucun produit disponible dans cette gamme pour le moment.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((p) => (
-              <Link
-                key={p.id}
-                to={`/categorie/${encodeURIComponent(key)}?produit=${p.id}`}
-                className="group overflow-hidden rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line transition hover:-translate-y-1 hover:shadow-2xl"
-              >
-                <div className="relative h-44 overflow-hidden">
-                  <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                  {p.stock_status === "out_of_stock" && (
-                    <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-xs font-semibold text-ink">{t.common.outOfStock}</span>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-display truncate text-base font-bold text-frost">
-                    {p.name}
-                    {String(p.id) === focusId && <span className="ml-2 text-xs text-amber">●</span>}
-                  </h3>
-                  <p className="mt-0.5 truncate text-xs text-dim">{p.dimensions_display}</p>
-                  <p className="mt-3 text-sm">
-                    <span className="font-display text-lg font-bold text-amber">{fmtPrice(p.sale_price)} {t.common.mad}</span>
-                    <span className="text-xs text-dim"> / {t.common.perM3}</span>
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+              {gridProducts.map((p) => (
+                <Link
+                  key={p.id}
+                  to={`/categorie/${encodeURIComponent(key)}?produit=${p.id}`}
+                  className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
+                >
+                  <div className="relative h-32 overflow-hidden sm:h-36">
+                    <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                    {p.stock_status === "out_of_stock" && (
+                      <span className="absolute left-2 top-2 rounded-full bg-rose px-2 py-0.5 text-[10px] font-semibold text-ink">{t.common.outOfStock}</span>
+                    )}
+                  </div>
+                  <div className="space-y-0.5 p-2.5 sm:p-3">
+                    <h3 className="font-display truncate text-sm font-bold text-frost">
+                      {p.name}
+                      {String(p.id) === focusId && <span className="ml-1.5 text-xs text-amber">●</span>}
+                    </h3>
+                    <p className="truncate text-xs text-dim">{p.wood_type_name || p.category}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {visible < products.length && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                  className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-semibold text-frost transition hover:bg-raise"
+                >
+                  Charger plus de produits
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

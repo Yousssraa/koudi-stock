@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../api/client.js";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
-import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
+import { categoryImage, productImage } from "../../site/utils.js";
 
 const CATEGORY_COPY = {
   "Bois rouge": { d: "Pins des pays nordiques, clairs et résineux." },
@@ -88,28 +88,24 @@ export default function Accueil() {
       <section className="mx-auto max-w-7xl px-4 py-14 lg:px-6">
         <SectionTitle>{t.common.categories}</SectionTitle>
         <p className="mb-8 text-sm text-ash">Explorez nos gammes de bois et panneaux.</p>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
           {categories.map((c) => (
             <Link
               key={c.key}
               to={`/categorie/${encodeURIComponent(c.key)}`}
-              className="group relative overflow-hidden rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line transition hover:-translate-y-1 hover:shadow-2xl"
+              className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
             >
-              <div className="relative h-44 overflow-hidden">
+              <div className="relative h-32 overflow-hidden">
                 <img
                   src={categoryImage(c.key)}
                   alt={c.label}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <span className="absolute right-3 top-3 rounded-full bg-ink/80 px-3 py-1 text-xs font-semibold text-frost">
-                  {c.product_count} produits
-                </span>
               </div>
-              <div className="p-5">
-                <h3 className="font-display text-lg font-bold text-frost group-hover:text-amber">{c.label}</h3>
-                <p className="mt-1 text-sm text-ash">{CATEGORY_COPY[c.key]?.d}</p>
-                <p className="mt-3 text-sm font-semibold text-amber">Découvrir →</p>
+              <div className="p-3">
+                <h3 className="font-display truncate text-sm font-bold text-frost group-hover:text-amber">{c.label}</h3>
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-ash">{CATEGORY_COPY[c.key]?.d}</p>
+                <p className="mt-2 text-xs font-semibold text-amber">Découvrir →</p>
               </div>
             </Link>
           ))}
@@ -129,36 +125,29 @@ export default function Accueil() {
             </Link>
           </div>
           {loadErr && <p className="mb-4 text-sm text-rose">{loadErr}</p>}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {featured.map((p) => (
               <Link
                 key={p.id}
-                to={`/categorie/${encodeURIComponent(p.category || "Panneaux")}`}
-                className="group overflow-hidden rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line transition hover:-translate-y-1 hover:shadow-2xl"
+                to={`/categorie/${encodeURIComponent(p.category || "Panneaux")}?produit=${p.id}`}
+                className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
               >
-                <div className="relative h-40 overflow-hidden">
+                <div className="relative h-32 overflow-hidden sm:h-36">
                   <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                   {p.stock_status === "out_of_stock" && (
-                    <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-xs font-semibold text-ink">
+                    <span className="absolute left-2 top-2 rounded-full bg-rose px-2 py-0.5 text-[10px] font-semibold text-ink">
                       {t.common.outOfStock}
                     </span>
                   )}
                   {p.stock_status === "low" && (
-                    <span className="absolute left-3 top-3 rounded-full bg-amber px-3 py-1 text-xs font-semibold text-ink">
+                    <span className="absolute left-2 top-2 rounded-full bg-amber px-2 py-0.5 text-[10px] font-semibold text-ink">
                       {t.common.lowStock}
                     </span>
                   )}
                 </div>
-                <div className="p-4">
-                  <h3 className="font-display truncate text-base font-bold text-frost">{p.name}</h3>
-                  <p className="mt-0.5 truncate text-xs text-dim">{p.dimensions_display}</p>
-                  <p className="mt-3 text-sm">
-                    <span className="text-xs text-ash">{t.common.from}</span>{" "}
-                    <span className="font-display text-lg font-bold text-amber">
-                      {fmtPrice(p.sale_price)} {t.common.mad}
-                    </span>
-                    <span className="text-xs text-dim"> / {t.common.perM3}</span>
-                  </p>
+                <div className="space-y-0.5 p-2.5 sm:p-3">
+                  <h3 className="font-display truncate text-sm font-bold text-frost">{p.name}</h3>
+                  <p className="truncate text-xs text-dim">{p.wood_type_name || p.category}</p>
                 </div>
               </Link>
             ))}
