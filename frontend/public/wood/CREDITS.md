@@ -17,5 +17,8 @@ dans ce dossier pour une démo hors-ligne). Sources : Wikimedia Commons.
 | `okoume.jpg` | Okoumé (échantillon de bois), CIRAD / Xylothèque | CIRAD — BnF | Public domain |
 | `panneaux.jpg` | Panneau de particules (gros plan) | Wikimedia Commons | Public domain |
 | `coffrage.jpg` | Plancher bois / coffrage | Titus Tscharntke | Public domain |
+| `hetre-etuve.jpg` | Hêtre étuvé (buche gedämpft) | Philipp Zinger | CC BY-SA 4.0 |
+| `eucalyptus.jpg` | Gommier / Eucalyptus (madrier brut) | Evan Edwards | Public domain |
+| `plywood.jpg` | Contreplaqué bouleau (birch plywood) | Bystander | CC BY-SA 3.0 |
 
 Liens : https://commons.wikimedia.org

@@ -3,6 +3,9 @@ const ESSENCE_IMAGE = {
   "pin sylvestre": "/wood/pin-sylvestre.jpg",
   "épicéa": "/wood/epicea.jpg",
   "éphra": "/wood/epicea.jpg",
+  "sapin du nord": "/wood/epicea.jpg",
+  "hêtre": "/wood/hetre-etuve.jpg",
+  "eucalyptus": "/wood/eucalyptus.jpg",
   "sapelli": "/wood/sapelli.jpg",
   "kossipo": "/wood/kossipo.jpg",
   "dabema": "/wood/dabema.jpg",
@@ -17,10 +20,12 @@ const CATEGORY_IMAGE = {
   "Bois de Construction": "/wood/pin-sylvestre.jpg",
   "Bois Traité Autoclave": "/wood/epicea.jpg",
   "Bois Feuillus & Nobles": "/wood/chene.jpg",
-  "Panneaux & Dérivés": "/wood/panneaux.jpg",
+  "Panneaux & Dérivés": "/wood/plywood.jpg",
 };
 
 export function productImage(product) {
+  if (product?.is_panel) return "/wood/plywood.jpg";
+  if (product?.category === "Panneaux & Dérivés") return "/wood/plywood.jpg";
   const essence = (product?.wood_type_name || "").toLowerCase();
   for (const [key, img] of Object.entries(ESSENCE_IMAGE)) {
     if (essence.includes(key)) return img;
