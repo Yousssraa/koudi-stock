@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/client.js";
+import { downloadPdf } from "../../api/download.js";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
 import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
@@ -58,6 +59,14 @@ export default function Accueil() {
   }, []);
 
   const featured = products.slice(0, 8);
+
+  const downloadCatalog = async () => {
+    try {
+      await downloadPdf("/public/catalog.pdf/", "KOUDI-WOOD-Catalogue.pdf");
+    } catch {
+      alert("Impossible de télécharger le catalogue pour le moment.");
+    }
+  };
 
   return (
     <div>
@@ -301,13 +310,24 @@ export default function Accueil() {
             <p className="mt-2 max-w-xl text-sm text-ash">
               Indiquez vos dimensions et quantités, notre équipe vous répond rapidement avec une proposition détaillée.
             </p>
+            <p className="mt-3 inline-block rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold text-amber ring-1 ring-amber/20">
+              📥 Téléchargez notre catalogue complet en PDF
+            </p>
           </div>
-          <Link
-            to="/devis"
-            className="shrink-0 rounded-lg bg-amber px-7 py-3 text-sm font-semibold text-ink shadow transition hover:brightness-110"
-          >
-            Demander un devis →
-          </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <button
+              onClick={downloadCatalog}
+              className="rounded-lg border border-amber/40 bg-panel px-7 py-3 text-sm font-semibold text-amber shadow transition hover:bg-amber/10"
+            >
+              📥 Télécharger le catalogue
+            </button>
+            <Link
+              to="/devis"
+              className="rounded-lg bg-amber px-7 py-3 text-sm font-semibold text-ink shadow transition hover:brightness-110"
+            >
+              Demander un devis →
+            </Link>
+          </div>
         </div>
       </section>
     </div>

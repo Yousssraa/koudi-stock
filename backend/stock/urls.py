@@ -42,5 +42,6 @@ urlpatterns = [
     path("public/products/", views_public.PublicProductsView.as_view(), name="public-products"),
     path("public/products/<int:pk>/", views_public.PublicProductDetailView.as_view(), name="public-product-detail"),
     path("public/company/", views_public.PublicCompanyView.as_view(), name="public-company"),
+    path("public/catalog.pdf/", views_public.PublicCatalogView.as_view(), name="public-catalog"),
     path("public/leads/", views_public.PublicLeadView.as_view(), name="public-lead"),
 ]

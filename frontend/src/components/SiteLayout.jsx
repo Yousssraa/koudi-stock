@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import api from "../api/client.js";
+import { downloadPdf } from "../api/download.js";
 import { SiteLangProvider, useSiteLang, useT } from "../site/i18n.jsx";
 
 const SOCIALS = [
@@ -98,6 +99,14 @@ function Navbar() {
   const linkBase =
     "relative rounded-lg px-3 py-2 text-sm font-medium text-frost transition hover:text-amber";
 
+  const downloadCatalog = async () => {
+    try {
+      await downloadPdf("/public/catalog.pdf/", "KOUDI-WOOD-Catalogue.pdf");
+    } catch {
+      alert("Impossible de télécharger le catalogue pour le moment.");
+    }
+  };
+
   return (
     <div className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 lg:px-6">
@@ -164,6 +173,12 @@ function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={downloadCatalog}
+            className="hidden items-center gap-1.5 rounded-lg border border-amber/40 px-4 py-2 text-sm font-semibold text-amber transition hover:bg-amber/10 sm:inline-flex"
+          >
+            <span aria-hidden>📥</span> Télécharger le catalogue
+          </button>
           <Link
             to="/app/login"
             className="hidden rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 sm:inline-block"
@@ -192,6 +207,9 @@ function Navbar() {
             <Link to="/produits" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">🛒 {t.nav.boutiques}</Link>
             <Link to="/devis" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">📄 {t.nav.devis}</Link>
             <Link to="/contact" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">✉ {t.nav.contact}</Link>
+            <button onClick={downloadCatalog} className="flex items-center gap-2 rounded-lg border border-amber/40 bg-panel px-3 py-2.5 text-sm font-medium text-amber hover:bg-amber/10">
+              📥 Télécharger le catalogue
+            </button>
             <Link to="/app/login" className="rounded-lg bg-gradient-to-r from-amber to-copper px-3 py-2.5 text-center text-sm font-semibold text-ink">
               {t.nav.espacePro}
             </Link>

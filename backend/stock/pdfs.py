@@ -788,3 +788,138 @@ def build_label_pdf(product, warehouse, total_qty=1, copies_per_label=2):
     c.save()
     buf.seek(0)
     return buf.read()
+
+# ---------------------------------------------------------------------------
+# Public PDF catalog
+# ---------------------------------------------------------------------------
+CATALOG_HEAD = [ParagraphStyle(
+    name="CatHead", fontName="Helvetica-Bold", fontSize=11,
+    textColor=colors.HexColor("#74482a"),
+)]
+_CAT_NUM = ParagraphStyle(
+    name="CatNum", fontName="Helvetica", fontSize=7.5, leading=10,
+    textColor=colors.HexColor("#3b2f23"), alignment=TA_RIGHT,
+)
+
+
+def build_catalog_pdf(products, grouped):
+    """Public A4 catalog: products grouped by category, priced per m3 (or m2 for panels).
+
+    ``grouped`` is an ordered list of (category_label, [Product...]).
+    Only public-safe fields are shown (no cost price / margin / internal stock).
+    """
+    from datetime import date
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=(14 * mm), bottomMargin=(14 * mm),
+        leftMargin=(14 * mm), rightMargin=(14 * mm),
+    )
+
+    comp = _company()
+    footer = Paragraph(
+        f"{comp['name']} — {comp['address']}<br/>{comp['contact']} · {comp['tax_id']}",
+        ParagraphStyle("Foot", fontName="Helvetica", fontSize=6.5,
+                       textColor=colors.HexColor("#8f6233")),
+    )
+
+    def on_page(canv, d):
+        canv.saveState()
+        canv.setFont("Helvetica", 6.5)
+        canv.setFillColor(colors.HexColor("#8f6233"))
+        canv.drawString((14 * mm), (8 * mm), f"{comp['name']}")
+        canv.drawRightString((A4[0] - 14 * mm), (8 * mm),
+                             f"Page {d.page} — {len(products)} produits")
+        canv.drawCentredString((A4[0] / 2), (8 * mm), footer.text)
+        canv.restoreState()
+
+    story = []
+
+    # Header
+    header = Table(
+        [
+            [Paragraph(f"<b>{comp['name']}</b>",
+                       ParagraphStyle("H1", fontName="Helvetica-Bold", fontSize=20,
+                                      textColor=colors.HexColor("#74482a"))),
+             Paragraph("<b>CATALOGUE PRODUITS</b>",
+                       ParagraphStyle("DT", fontName="Helvetica-Bold", fontSize=15,
+                                      alignment=TA_RIGHT, textColor=colors.HexColor("#3b2f23")))],
+             [Paragraph(comp["tagline"], _SUB_HEAD),
+             Paragraph(f"Date : {date.today():%d/%m/%Y}<br/>"
+                       f"Prix TTC en MAD", _CAT_NUM)],
+        ],
+        colWidths=[doc.width * 0.55, doc.width * 0.45],
+    )
+    header.setStyle(TableStyle([
+        ("SPAN", (0, 0), (1, 0)),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor("#8f6233")),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 6 * mm))
+
+    head_style = ParagraphStyle(
+        "TH", fontName="Helvetica-Bold", fontSize=7.5, leading=9,
+        textColor=colors.white,
+    )
+    row_style = ParagraphStyle(
+        "ROW", fontName="Helvetica", fontSize=7.5, leading=9,
+        textColor=colors.HexColor("#3b2f23"),
+    )
+
+    for label, prods in grouped:
+        story.append(Paragraph(f"<b>{label}</b>", CATALOG_HEAD[0]))
+        story.append(Spacer(1, 2 * mm))
+
+        data = [[
+            Paragraph("RÉF", head_style),
+            Paragraph("DÉSIGNATION", head_style),
+            Paragraph("ESSENCE / PIÈCE", head_style),
+            Paragraph("TRAITEMENT", head_style),
+            Paragraph("DIMENSIONS", head_style),
+            Paragraph("VOL / SURF.", head_style),
+            Paragraph("PRIX (MAD)", head_style),
+        ]]
+        for p in prods:
+            une = (
+                f"{float(p.surface_m2):.2f} m²" if p.is_panel and p.surface_m2
+                else f"{float(p.volume_cubic_m):.3f} m³"
+            )
+            data.append([
+                Paragraph(p.sku or "", row_style),
+                Paragraph(_esc(p.name), row_style),
+                Paragraph(f"{p.wood_type.name if p.wood_type else ''} — {p.piece_type or ''}", row_style),
+                Paragraph(p.treatment or "—", row_style),
+                Paragraph(p.dimensions_display or "—", row_style),
+                Paragraph(une, row_style),
+                Paragraph(f"{_money(p.sale_price)}", row_style),
+            ])
+
+        table = Table(data, colWidths=[
+            doc.width * 0.10, doc.width * 0.28, doc.width * 0.20,
+            doc.width * 0.13, doc.width * 0.14, doc.width * 0.07,
+            doc.width * 0.08,
+        ], repeatRows=1)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#74482a")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+             [colors.white, colors.HexColor("#f4ecdf")]),
+            ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 6 * mm))
+
+    doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
+    buf.seek(0)
+    return buf.read()
+
+
+def _esc(text):
+    """Minimal XML escaping for ReportLab paragraphs."""
+    text = str(text or "")
+    return (text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))

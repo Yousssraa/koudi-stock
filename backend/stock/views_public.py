@@ -7,6 +7,7 @@ Stock level is surfaced only as a coarse ``stock_status`` ("in_stock" / "low" /
 commercially sensitive quantities.
 """
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ from rest_framework.views import APIView
 
 from .audit import audit
 from .models import CompanyProfile, Lead, Product
+from .pdfs import build_catalog_pdf
 from .serializers import (
     PublicCategorySerializer,
     PublicLeadSerializer,
@@ -190,3 +192,34 @@ class PublicLeadView(APIView):
             },
         )
         return Response({"id": lead.pk, "status": "received"}, status=status.HTTP_201_CREATED)
+
+
+class PublicCatalogView(APIView):
+    """GET /api/public/catalog.pdf/ → downloadable PDF catalog of active products.
+
+    Products are grouped by category and priced per m³ (or m² for panels).
+    No cost price, margin or internal stock is exposed.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = (
+            Product.objects.select_related("wood_type")
+            .filter(is_active=True)
+            .order_by("name")
+        )
+        grouped = {}
+        for p in qs:
+            grouped.setdefault(p.category, []).append(p)
+
+        label = dict(Product.Category.choices)
+        groups = [(label.get(k, k), v) for k, v in grouped.items()]
+
+        payload = build_catalog_pdf(list(qs), groups)
+        filename = "KOUDI-WOOD-Catalogue.pdf"
+        return HttpResponse(
+            payload, content_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
