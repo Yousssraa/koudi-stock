@@ -25,10 +25,12 @@ from stock import services
 from stock.models import (
     Client,
     DryingBatch,
+    Inventory,
     Kiln,
     PriceTier,
     Product,
     SalesOrder,
+    StockMovement,
     Supplier,
     Warehouse,
     compute_volume_m3,
@@ -433,3 +435,69 @@ class LandedCostAndSaleTests(BaseModulesTest):
         text = zlib.decompress(base64.a85decode(data))
         self.assertIn("REMISE", text.decode("latin-1"))
         self.assertIn("TOTAL TTC", text.decode("latin-1"))
+
+
+class StockAdjustmentTests(BaseModulesTest):
+    def _stock(self, product):
+        return Inventory.objects.get(product=product, warehouse=self.wh).quantity
+
+    def test_positive_adjustment_increases_stock(self):
+        product = self.make_product("SKU-ADJ-1", "Planche à corriger", dims=SMALL, cost="4000", sale="4600")
+        self.buy(product, 100)  # seed some stock first
+        before = self._stock(product)
+
+        r = self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk,
+            "quantity": "25", "reason": "Inventaire — surplus constaté",
+        }, format="json")
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertEqual(r.data["movement_type"], "adjustment")
+        self.assertEqual(float(r.data["quantity"]), 25.0)
+        self.assertEqual(Inventory.objects.get(product=product).quantity, before + Decimal("25"))
+
+    def test_negative_adjustment_decreases_stock(self):
+        product = self.make_product("SKU-ADJ-2", "Planche décomptée", dims=SMALL, cost="4000", sale="4600")
+        self.buy(product, 100)
+        before = self._stock(product)
+
+        r = self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk,
+            "quantity": "-15", "reason": "Retrait — casse constatée",
+        }, format="json")
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertEqual(float(r.data["quantity"]), -15.0)
+        self.assertEqual(Inventory.objects.get(product=product).quantity, before - Decimal("15"))
+
+    def test_negative_adjustment_below_zero_is_rejected(self):
+        product = self.make_product("SKU-ADJ-3", "Planche nul", dims=SMALL, cost="4000", sale="4600")
+        self.buy(product, 5)
+        r = self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk, "quantity": "-999",
+        }, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_zero_quantity_rejected(self):
+        product = self.make_product("SKU-ADJ-4", "Planche zéro", dims=SMALL)
+        r = self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk, "quantity": "0",
+        }, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_movement_appears_in_ledger(self):
+        product = self.make_product("SKU-ADJ-5", "Planche trace", dims=SMALL, cost="4000", sale="4600")
+        self.buy(product, 100)
+        self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk, "quantity": "10",
+        }, format="json")
+        self.api.post("/api/stock-adjustments/", {
+            "product_id": product.pk, "warehouse_id": self.wh.pk, "quantity": "-4",
+        }, format="json")
+
+        r = self.api.get("/api/stock-movements/", {"movement_type": "adjustment"})
+        self.assertEqual(r.status_code, 200)
+        rows = r.data["results"] if isinstance(r.data, dict) else r.data
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(m["movement_type"] == "adjustment" for m in rows))
+        qty = {float(m["quantity"]): m for m in rows}
+        self.assertIn(10.0, qty)
+        self.assertIn(-4.0, qty)

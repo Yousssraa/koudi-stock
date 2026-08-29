@@ -55,6 +55,7 @@ from .serializers import (
     ReorderSerializer,
     SaleTransactionSerializer,
     SalesOrderSerializer,
+    StockAdjustmentSerializer,
     StockMovementSerializer,
     SupplierSerializer,
     TransferSerializer,
@@ -467,6 +468,58 @@ class TransferView(APIView):
             "lot": data.get("lot_number"),
         })
         return Response(StockMovementSerializer(transfer_out).data, status=status.HTTP_201_CREATED)
+
+
+class StockAdjustmentView(APIView):
+    """POST /api/stock-adjustments/ → correct warehouse stock for a product.
+
+    Body: { "product_id": 5, "warehouse_id": 1, "quantity": 12.5,
+            "reason"?: "Inventaire — surplus constaté" }
+
+    ``quantity`` is signed: a positive value adds stock, a negative value
+    removes it. The movement is logged as ``adjustment`` in the ledger; the
+    ``maintain_inventory`` trigger applies the signed delta directly to the
+    inventory row (it is not negated like a sale). Monthly archive and the
+    movement history pick the adjustment up automatically.
+    """
+
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        serializer = StockAdjustmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            product = Product.objects.get(pk=data["product_id"])
+            warehouse = Warehouse.objects.get(pk=data["warehouse_id"])
+        except (Product.DoesNotExist, Warehouse.DoesNotExist) as exc:
+            return Response(
+                {"detail": f"Objet introuvable : {exc}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        quantity = data["quantity"]
+        try:
+            movement = services.log_stock_movement(
+                product=product,
+                warehouse=warehouse,
+                movement_type=StockMovement.MovementType.ADJUSTMENT,
+                quantity=quantity,
+                note=(data.get("reason") or "").strip() or "Ajustement de stock",
+            )
+        except Exception as exc:  # insufficient stock for a negative delta, etc.
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        volume = movement.volume_m3 or ZERO
+        audit("adjustment", "stock_movement", movement.pk, movement.movement_no, {
+            "product_sku": product.sku,
+            "warehouse": warehouse.code,
+            "quantity": str(quantity),
+            "volume_m3": str(volume),
+            "reason": data.get("reason"),
+        })
+        return Response(StockMovementSerializer(movement).data, status=status.HTTP_201_CREATED)
 
 
 class ReorderView(APIView):

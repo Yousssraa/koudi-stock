@@ -64,7 +64,14 @@ def log_stock_movement(
     note=None,
     moved_at=None,
 ):
-    """Insert a ledger row; the DB trigger updates ``inventory`` automatically."""
+    """Insert a ledger row; the DB trigger updates ``inventory`` automatically.
+
+    ``moved_at`` defaults to ``timezone.now()`` so the returned instance always
+    carries a real datetime (resolved in Python, not the lazy ``Now()`` DB
+    expression) — this lets callers serialize the movement immediately.
+    """
+    if moved_at is None:
+        moved_at = timezone.now()
     return StockMovement.objects.create(
         movement_no=_next_movement_no(),
         product=product,
@@ -76,7 +83,7 @@ def log_stock_movement(
         reference_type=reference_type,
         reference_id=reference_id,
         note=note,
-        **({"moved_at": moved_at} if moved_at is not None else {}),
+        moved_at=moved_at,
     )
 
 

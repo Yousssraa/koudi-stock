@@ -8,6 +8,7 @@ import useDocumentTitle from "../hooks/useDocumentTitle.jsx";
 import StockBadge from "../components/StockBadge.jsx";
 import MoistureBadge from "../components/MoistureBadge.jsx";
 import ProductModal from "../components/ProductModal.jsx";
+import AdjustmentModal from "../components/AdjustmentModal.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import Skeleton from "../components/Skeleton.jsx";
 
@@ -51,7 +52,7 @@ const woodPhoto = (p) =>
 const warehouseShort = (name) => (name || "").replace(/^Dépôt\s+/i, "") || name || "—";
 
 export default function Inventory() {
-  const { warehouseId, refreshKey } = useApp();
+  const { warehouseId, refreshKey, warehouses } = useApp();
   const toast = useToast();
   useDocumentTitle("Inventaire");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,6 +74,7 @@ export default function Inventory() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [adjusting, setAdjusting] = useState(null);
 
   useEffect(() => {
     api
@@ -408,6 +410,13 @@ export default function Inventory() {
                   ◫ QR Étiquettes
                 </button>
                 <button
+                  onClick={() => setAdjusting(p)}
+                  title="Corriger le stock (ajustement)"
+                  className="flex-1 rounded-lg border border-line bg-panel py-2 text-xs font-semibold text-ash transition hover:border-skyx/40 hover:bg-raise hover:text-skyx"
+                >
+                  ⇅ Ajustement
+                </button>
+                <button
                   onClick={() => openEdit(p)}
                   className="flex-1 rounded-lg border border-line bg-panel py-2 text-xs font-semibold text-ash transition hover:border-amber/40 hover:bg-raise hover:text-amber"
                 >
@@ -440,6 +449,16 @@ export default function Inventory() {
       )}
 
       <ProductModal open={modalOpen} onClose={() => setModalOpen(false)} onSaved={onSaved} product={editing} />
+      <AdjustmentModal
+        open={Boolean(adjusting)}
+        onClose={() => setAdjusting(null)}
+        product={adjusting}
+        warehouses={warehouses}
+        onSaved={() => {
+          toast.success("Ajustement enregistré.");
+          load(null);
+        }}
+      />
     </div>
   );
 }

@@ -27,6 +27,7 @@ urlpatterns = [
     path("purchases/", views.PurchaseTransactionView.as_view(), name="purchase-transaction"),
     path("sales/", views.SaleTransactionView.as_view(), name="sale-transaction"),
     path("transfers/", views.TransferView.as_view(), name="transfer"),
+    path("stock-adjustments/", views.StockAdjustmentView.as_view(), name="stock-adjustment"),
     path("reorders/", views.ReorderView.as_view(), name="reorder"),
     path("payments/", views.PaymentTransactionView.as_view(), name="payment-transaction"),
     path("pricing/lookup/", views.PricingLookupView.as_view(), name="pricing-lookup"),

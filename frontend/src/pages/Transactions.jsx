@@ -141,12 +141,78 @@ function PdfButton({ label, onClick, accent = false }) {
   );
 }
 
+const MOVEMENT_META = {
+  purchase_in: { label: "Entrée achat", tone: "text-jade", sign: "+" },
+  sale_out: { label: "Sortie vente", tone: "text-rose", sign: "-" },
+  purchase_return: { label: "Retour achat", tone: "text-rose", sign: "-" },
+  sale_return: { label: "Retour vente", tone: "text-jade", sign: "+" },
+  transfer_in: { label: "Entrée transfert", tone: "text-jade", sign: "+" },
+  transfer_out: { label: "Sortie transfert", tone: "text-rose", sign: "-" },
+  adjustment: { label: "Ajustement", tone: "text-skyx", sign: "±" },
+  opening: { label: "Stock initial", tone: "text-jade", sign: "+" },
+};
+
+function MovementCard({ m }) {
+  const meta = MOVEMENT_META[m.movement_type] || {
+    label: m.movement_type,
+    tone: "text-ash",
+    sign: "±",
+  };
+  return (
+    <div className="rounded-2xl bg-panel p-5 shadow-lg shadow-black/20 ring-1 ring-line">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <span
+            className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ring-1 ${
+              m.movement_type === "adjustment"
+                ? "bg-skyx/10 text-skyx ring-skyx/30"
+                : meta.sign === "-"
+                  ? "bg-rose/10 text-rose ring-rose/30"
+                  : "bg-jade/10 text-jade ring-jade/30"
+            }`}
+          >
+            {meta.sign}
+          </span>
+          <div>
+            <p className="font-mono text-xs text-dim">{m.movement_no}</p>
+            <p className="text-sm font-semibold text-frost">{m.product}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className={`font-display text-lg font-bold ${meta.tone}`}>
+            {meta.sign === "-" ? "−" : meta.sign === "±" ? "" : "+"}
+            {fmt(Math.abs(m.quantity))}
+          </p>
+          <p className="text-xs text-dim">{m.warehouse} · {m.moved_at}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-raise px-2.5 py-0.5 font-semibold text-ash ring-1 ring-line">
+            {meta.label}
+          </span>
+          {m.lot_number && (
+            <span className="rounded-full bg-raise px-2.5 py-0.5 font-mono text-dim ring-1 ring-line">
+              {m.lot_number}
+            </span>
+          )}
+        </div>
+        <span className="text-dim">
+          {m.volume_m3 !== null && m.volume_m3 !== undefined ? `${fmt(m.volume_m3, 4)} m³` : "—"}
+        </span>
+      </div>
+      {m.note && <p className="mt-2 text-xs italic text-ash">{m.note}</p>}
+    </div>
+  );
+}
+
 export default function Transactions() {
   const { warehouses, warehouseId, refreshKey, refresh } = useApp();
   const toast = useToast();
   useDocumentTitle("Ventes & Achats");
   const [tab, setTab] = useState("sale");
   const [orders, setOrders] = useState([]);
+  const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modal, setModal] = useState(null);
@@ -154,6 +220,17 @@ export default function Transactions() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
+    if (tab === "movements") {
+      api
+        .get("/stock-movements/", { params: { page_size: 50 } })
+        .then((res) => setMovements(res.data.results || res.data || []))
+        .catch((err) => {
+          setMovements([]);
+          setError(err.response?.data?.detail || err.message || "Impossible de charger les mouvements.");
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
     const endpoint = tab === "sale" ? "/sales-orders/" : "/purchase-orders/";
     api
       .get(endpoint, { params: { page_size: 50 } })
@@ -178,7 +255,10 @@ export default function Transactions() {
         </div>
         <button
           onClick={() => setModal(tab)}
-          className="rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+          disabled={tab === "movements"}
+          className={`rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 ${
+            tab === "movements" ? "opacity-40" : ""
+          }`}
         >
           + Nouvelle {tab === "sale" ? "Vente" : "Commande Achat"}
         </button>
@@ -188,6 +268,7 @@ export default function Transactions() {
         {[
           { key: "sale", label: "Ventes" },
           { key: "purchase", label: "Achats" },
+          { key: "movements", label: "Mouvements" },
         ].map((t) => (
           <button
             key={t.key}
@@ -221,6 +302,20 @@ export default function Transactions() {
             <Skeleton key={i} className="h-44" />
           ))}
         </div>
+      ) : tab === "movements" ? (
+        movements.length === 0 ? (
+          <EmptyState
+            icon="⇅"
+            title="Aucun mouvement"
+            message="Le journal des mouvements de stock apparaîtra ici (ventes, achats, transferts, ajustements…)."
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            {movements.map((m) => (
+              <MovementCard key={m.id} m={m} />
+            ))}
+          </div>
+        )
       ) : orders.length === 0 ? (
         <EmptyState
           icon={tab === "sale" ? "↑" : "↓"}

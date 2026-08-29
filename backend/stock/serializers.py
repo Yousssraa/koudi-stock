@@ -455,6 +455,41 @@ class TransferSerializer(serializers.Serializer):
         return attrs
 
 
+class StockAdjustmentSerializer(serializers.Serializer):
+    """Stock correction (see :data:`StockMovement.MovementType.ADJUSTMENT`).
+
+    ``quantity`` is **signed**: a positive value increases the warehouse stock
+    (e.g. counting surplus), a negative value decreases it (e.g. damage,
+    shrinkage, miscount). The value is logged verbatim — the
+    ``maintain_inventory`` trigger only negates ``sale_out`` /
+    ``purchase_return`` / ``transfer_out``, so the adjustment sign is applied
+    directly to the inventory quantity.
+    """
+    product_id = serializers.IntegerField()
+    warehouse_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=4, min_value=None
+    )
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+    def validate_product_id(self, value):
+        if not Product.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Produit introuvable ou inactif.")
+        return value
+
+    def validate_warehouse_id(self, value):
+        if not Warehouse.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Dépôt introuvable ou inactif.")
+        return value
+
+    def validate_quantity(self, value):
+        if value == 0:
+            raise serializers.ValidationError(
+                "La quantité d'ajustement doit être non nulle."
+            )
+        return value
+
+
 # ---------------------------------------------------------------------------
 # Monthly archive serializers
 # ---------------------------------------------------------------------------
