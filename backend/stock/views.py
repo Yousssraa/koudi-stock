@@ -1,6 +1,6 @@
 """API views: ViewSets for CRUD + transactional endpoints + dashboard."""
 import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_CEILING
 
 from django.contrib.auth import authenticate
@@ -22,6 +22,7 @@ from .models import (
     AuditLog,
     Client,
     CompanyProfile,
+    DeliveryNote,
     DryingBatch,
     Inventory,
     Kiln,
@@ -40,6 +41,8 @@ from .serializers import (
     AuditLogSerializer,
     ClientSerializer,
     CompanyProfileSerializer,
+    DeliveryNoteCreateSerializer,
+    DeliveryNoteSerializer,
     DryingBatchSerializer,
     InventorySerializer,
     KilnSerializer,
@@ -252,12 +255,18 @@ class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
         movement_type = self.request.query_params.get("movement_type")
         product = self.request.query_params.get("product")
         warehouse = self.request.query_params.get("warehouse")
+        year = self.request.query_params.get("year")
+        month = self.request.query_params.get("month")
         if movement_type:
             qs = qs.filter(movement_type=movement_type)
         if product:
             qs = qs.filter(product_id=product)
         if warehouse:
             qs = qs.filter(warehouse_id=warehouse)
+        if year:
+            qs = qs.filter(moved_at__year=int(year))
+        if month:
+            qs = qs.filter(moved_at__month=int(month))
         return qs
 
 
@@ -331,6 +340,109 @@ class SalesOrderViewSet(viewsets.ReadOnlyModelViewSet):
         return _pdf_response(
             pdfs.build_quotation_pdf(so), f"{so.so_number}_DEVIS.pdf"
         )
+
+
+# ---------------------------------------------------------------------------
+# Transport & Logistique — Bon de Livraison (Delivery Note)
+# ---------------------------------------------------------------------------
+class DeliveryNoteViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DeliveryNote.objects.select_related("client", "warehouse").prefetch_related(
+        "items__product"
+    )
+    serializer_class = DeliveryNoteSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status = self.request.query_params.get("status")
+        client = self.request.query_params.get("client")
+        warehouse = self.request.query_params.get("warehouse")
+        year = self.request.query_params.get("year")
+        month = self.request.query_params.get("month")
+        if status:
+            qs = qs.filter(status=status)
+        if client:
+            qs = qs.filter(client_id=client)
+        if warehouse:
+            qs = qs.filter(warehouse_id=warehouse)
+        if year and month:
+            qs = qs.filter(order_date__year=int(year), order_date__month=int(month))
+        return qs
+
+    @action(detail=True, methods=["get"])
+    def pdf(self, request, pk=None):
+        """Download / re-download a print-ready Bon de Livraison PDF."""
+        bl = self.get_object()
+        audit("download", "delivery_note", bl.pk, bl.bl_number, {"document": "delivery_note"})
+        return _pdf_response(
+            pdfs.build_delivery_note_pdf(bl), f"{bl.bl_number}_BON_DE_LIVRAISON.pdf"
+        )
+
+    @action(detail=True, methods=["post"])
+    def status(self, request, pk=None):
+        """Advance the delivery note lifecycle: preparation → in_transit → delivered.
+
+        Body: { "status": "in_transit" | "delivered" }
+        """
+        bl = self.get_object()
+        new_status = (request.data or {}).get("status")
+        if new_status not in (
+            DeliveryNote.Status.PREPARATION,
+            DeliveryNote.Status.IN_TRANSIT,
+            DeliveryNote.Status.DELIVERED,
+        ):
+            return Response(
+                {"detail": "Statut invalide. Utilisez preparation, in_transit ou delivered."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            bl = services.advance_delivery_note(bl, new_status)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        audit("update", "delivery_note", bl.pk, bl.bl_number, {"status": new_status})
+        return Response(DeliveryNoteSerializer(bl).data)
+
+    @action(detail=False, methods=["post"], url_path="create")
+    def new_delivery(self, request):
+        """POST /api/delivery-notes/create/ → create a shipment and log stock movements.
+
+        Body:
+        {
+          "client_id": 1, "warehouse_id": 1,
+          "driver_name": "...", "truck_plate": "...",
+          "items": [ { "product_id": 5, "quantity": 40, "price_per_m3"?: 3200 } ]
+        }
+        """
+        serializer = DeliveryNoteCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            client = Client.objects.get(pk=data["client_id"])
+            warehouse = Warehouse.objects.get(pk=data["warehouse_id"])
+            items = [{"product": Product.objects.get(pk=i["product_id"]), **i} for i in data["items"]]
+        except (Client.DoesNotExist, Warehouse.DoesNotExist, Product.DoesNotExist) as exc:
+            return Response({"detail": f"Objet introuvable : {exc}"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            bl = services.create_delivery_note(
+                client,
+                warehouse,
+                items,
+                driver_name=data.get("driver_name"),
+                truck_plate=data.get("truck_plate"),
+                notes=data.get("notes"),
+            )
+        except Exception as exc:  # insufficient stock (negative constraint)
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        audit("create", "delivery_note", bl.pk, bl.bl_number, {
+            "client": client.code,
+            "warehouse": warehouse.code,
+            "driver": data.get("driver_name"),
+            "truck": data.get("truck_plate"),
+            "items": [{"sku": i["product"].sku, "quantity": str(i["quantity"])} for i in items],
+        })
+        return Response(DeliveryNoteSerializer(bl).data, status=status.HTTP_201_CREATED)
 
 
 # ---------------------------------------------------------------------------
@@ -1034,6 +1146,45 @@ class DashboardView(APIView):
         # Recent movements.
         recent = StockMovement.objects.select_related("product", "warehouse")[:10]
 
+        # Shipments (brand of the day) created today.
+        today = timezone.localdate()
+        shipments_today = DeliveryNote.objects.filter(order_date=today).count()
+        shipments_in_prep = DeliveryNote.objects.filter(
+            status=DeliveryNote.Status.PREPARATION
+        ).count()
+
+        # Stock movements In vs Out — volume (m³) per day for the last 14 days.
+        moving_in = [
+            StockMovement.MovementType.PURCHASE_IN,
+            StockMovement.MovementType.SALE_RETURN,
+            StockMovement.MovementType.TRANSFER_IN,
+            StockMovement.MovementType.OPENING,
+        ]
+        moving_out = [
+            StockMovement.MovementType.SALE_OUT,
+            StockMovement.MovementType.PURCHASE_RETURN,
+            StockMovement.MovementType.TRANSFER_OUT,
+        ]
+        movement_series = []
+        for i in range(13, -1, -1):
+            day = today - timedelta(days=i)
+            day_start = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+            day_end = timezone.make_aware(datetime.combine(day + timedelta(days=1), datetime.min.time()))
+            in_moves = list(StockMovement.objects.filter(
+                movement_type__in=moving_in, moved_at__gte=day_start, moved_at__lt=day_end
+            ).select_related("product"))
+            out_moves = list(StockMovement.objects.filter(
+                movement_type__in=moving_out, moved_at__gte=day_start, moved_at__lt=day_end
+            ).select_related("product"))
+            in_vol = sum((m.volume_m3 or ZERO) for m in in_moves)
+            out_vol = sum((m.volume_m3 or ZERO) for m in out_moves)
+            movement_series.append({
+                "day": day.strftime("%Y-%m-%d"),
+                "label": day.strftime("%d/%m"),
+                "in_m3": round(float(in_vol), 4),
+                "out_m3": round(float(out_vol), 4),
+            })
+
         return Response(
             {
                 "total_volume_m3": round(float(total_volume), 4),
@@ -1050,6 +1201,9 @@ class DashboardView(APIView):
                 "monthly_sales_series": months_series,
                 "top_products": top_products,
                 "recent_movements": StockMovementSerializer(recent, many=True).data,
+                "shipments_today": shipments_today,
+                "shipments_in_prep": shipments_in_prep,
+                "movement_series": movement_series,
             }
         )
 

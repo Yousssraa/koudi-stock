@@ -24,6 +24,7 @@ from rest_framework.test import APIClient
 from stock import services
 from stock.models import (
     Client,
+    DeliveryNote,
     DryingBatch,
     Inventory,
     Kiln,
@@ -501,3 +502,116 @@ class StockAdjustmentTests(BaseModulesTest):
         qty = {float(m["quantity"]): m for m in rows}
         self.assertIn(10.0, qty)
         self.assertIn(-4.0, qty)
+
+
+class DeliveryNoteTests(BaseModulesTest):
+    """Bon de livraison (Transport & Logistique) lifecycle.
+
+    Covers creation (decrements stock via the sales ledger), the strictly
+    forward status flow preparation → in_transit → delivered, rejection of
+    backward/invalid transitions, and the printable PDF.
+    """
+
+    def _stock(self, product):
+        return Inventory.objects.get(product=product, warehouse=self.wh).quantity
+
+    def _create_delivery(self, product, qty="10", price="4200"):
+        client = self.make_client("CLI-BL-1")
+        r = self.api.post("/api/delivery-notes/create/", {
+            "client_id": client.pk,
+            "warehouse_id": self.wh.pk,
+            "driver_name": "Yassine Alaoui",
+            "truck_plate": "12345-A-6",
+            "notes": "Livraison test",
+            "items": [{"product_id": product.pk, "quantity": qty, "price_per_m3": price}],
+        }, format="json")
+        return r
+
+    def test_create_decrements_stock_and_logs_sale_out(self):
+        product = self.make_product("SKU-BL-1", "Panneau BL", dims=PANEL, cost="3400", sale="4200")
+        self.buy(product, 200)
+        before = self._stock(product)
+
+        qty = "18"
+        r = self._create_delivery(product, qty)
+        self.assertEqual(r.status_code, 201, r.data)
+        so = r.data
+        self.assertEqual(so["status"], "preparation")
+        self.assertTrue(so["bl_number"].startswith("BL"))
+        # 18 * PANEL volume (compute_volume_m3(18,2500,1220,1) = 0.0549)
+        self.assertGreater(float(so["total_volume_m3"]), 0)
+
+        # stock decremented by the sale_out trigger
+        self.assertEqual(self._stock(product), before - Decimal(qty))
+
+        # one sale_out ledger row referencing the delivery note
+        moves = StockMovement.objects.filter(
+            movement_type=StockMovement.MovementType.SALE_OUT,
+            reference_type="delivery_note",
+            reference_id=so["id"],
+        )
+        self.assertEqual(moves.count(), 1)
+        self.assertEqual(moves[0].quantity, Decimal(qty))
+
+    def test_forward_status_flow(self):
+        product = self.buy_panel_stock()
+        r = self._create_delivery(product, "5")
+        self.assertEqual(r.status_code, 201, r.data)
+        so_id = r.data["id"]
+
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "in_transit"}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual(r.data["status"], "in_transit")
+        self.assertIsNotNone(r.data["shipped_at"])
+
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "delivered"}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual(r.data["status"], "delivered")
+        self.assertIsNotNone(r.data["delivered_at"])
+
+    def test_backward_transition_rejected(self):
+        product = self.buy_panel_stock()
+        r = self._create_delivery(product, "5")
+        so_id = r.data["id"]
+
+        # delivered is NOT an arc from preparation (skips in_transit)
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "delivered"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        # move forward then try to go back
+        self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "in_transit"}, format="json")
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "preparation"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+        # no-op transition is rejected too
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "in_transit"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_invalid_status_rejected(self):
+        product = self.buy_panel_stock()
+        r = self._create_delivery(product, "5")
+        so_id = r.data["id"]
+        r = self.api.post(f"/api/delivery-notes/{so_id}/status/", {"status": "bogus"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_delivery_note_pdf_builds(self):
+        from stock.pdfs import build_delivery_note_pdf
+
+        product = self.buy_panel_stock()
+        r = self._create_delivery(product, "5")
+        self.assertEqual(r.status_code, 201, r.data)
+        bl = DeliveryNote.objects.get(pk=r.data["id"])
+        pdf = build_delivery_note_pdf(bl)
+        self.assertTrue(pdf.startswith(b"%PDF"))
+
+    def test_list_filter_by_month(self):
+        product = self.buy_panel_stock()
+        self._create_delivery(product, "5")
+        now = timezone.localtime()
+        year, month = now.year, now.month
+        r = self.api.get("/api/delivery-notes/", {"year": year, "month": month})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["count"], 1)
+        r2 = self.api.get("/api/delivery-notes/", {"year": year, "month": (month % 12) + 1})
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(r2.data["count"], 0)

@@ -14,6 +14,8 @@ from django.utils import timezone
 
 from .models import (
     Client,
+    DeliveryNote,
+    DeliveryNoteItem,
     DryingBatch,
     Payment,
     PriceTier,
@@ -232,6 +234,96 @@ def create_sale(client, warehouse, items, order_date=None, currency="MAD", moved
             order_date=order_date, created_at=dt, updated_at=dt
         )
     return so
+
+
+def next_bl_number():
+    return timezone.now().strftime("BL%Y%m%d%H%M%S")
+
+
+@transaction.atomic
+def create_delivery_note(client, warehouse, items, driver_name=None, truck_plate=None,
+                         notes=None, bl_number=None, moved_at=None):
+    """Create a Bon de Livraison and log a ``sale_out`` movement per line.
+
+    The delivery note ships timber to a client: each line is priced per cubic
+    metre (MAD/m³) and the ``sale_out`` ledger rows decrement the warehouse
+    inventory via the ``maintain_inventory`` trigger, so the shipping history
+    doubles as the transport/archive audit trail.
+
+    :arg items: list of ``{"product", "quantity", "price_per_m3"?}`` dicts.
+    :returns: the saved ``DeliveryNote`` (with items).
+    """
+    moved_at = moved_at or timezone.now()
+    bl = DeliveryNote.objects.create(
+        bl_number=bl_number or next_bl_number(),
+        client=client,
+        warehouse=warehouse,
+        driver_name=(driver_name or "").strip(),
+        truck_plate=(truck_plate or "").strip(),
+        notes=(notes or "").strip(),
+        status=DeliveryNote.Status.PREPARATION,
+    )
+
+    for item in items:
+        product = item["product"]
+        qty = Decimal(str(item["quantity"]))
+        price_per_m3 = Decimal(str(item.get("price_per_m3", product.sale_price or ZERO)))
+        volume_m3 = _line_volume_m3(product, item, qty) or ZERO
+        line_total = volume_m3 * price_per_m3
+
+        DeliveryNoteItem.objects.create(
+            delivery_note=bl,
+            product=product,
+            quantity=qty,
+            unit_price=price_per_m3,
+            line_total=line_total,
+        )
+
+        log_stock_movement(
+            product=product,
+            warehouse=warehouse,
+            movement_type=StockMovement.MovementType.SALE_OUT,
+            quantity=qty,
+            unit_price=price_per_m3,
+            lot_number=item.get("lot_number"),
+            reference_type="delivery_note",
+            reference_id=bl.pk,
+            note=f"CUBIC METRES: {volume_m3} · BL {bl.bl_number}",
+            moved_at=moved_at,
+        )
+    return bl
+
+
+@transaction.atomic
+def advance_delivery_note(bl, new_status):
+    """Move a Bon de Livraison along its lifecycle and stamp the timestamps.
+
+    Strictly forward: ``preparation → in_transit → delivered``. Backward or
+    no-op transitions are rejected. Returns the updated note.
+    """
+    if new_status not in (DeliveryNote.Status.PREPARATION, DeliveryNote.Status.IN_TRANSIT, DeliveryNote.Status.DELIVERED):
+        raise ValueError(f"Statut de livraison invalide : {new_status!r}")
+
+    order = [
+        DeliveryNote.Status.PREPARATION,
+        DeliveryNote.Status.IN_TRANSIT,
+        DeliveryNote.Status.DELIVERED,
+    ]
+    current_idx = order.index(bl.status)
+    next_idx = order.index(new_status)
+    if next_idx != current_idx + 1:
+        raise ValueError(
+            f"Transition de statut non autorisée : {bl.status!r} → {new_status!r}. "
+            "Progression d'un seul pas (préparation → en cours → livré)."
+        )
+
+    bl.status = new_status
+    if new_status == DeliveryNote.Status.IN_TRANSIT and bl.shipped_at is None:
+        bl.shipped_at = timezone.now()
+    if new_status == DeliveryNote.Status.DELIVERED and bl.delivered_at is None:
+        bl.delivered_at = timezone.now()
+    bl.save(update_fields=["status", "shipped_at", "delivered_at", "updated_at"])
+    return bl
 
 
 @transaction.atomic

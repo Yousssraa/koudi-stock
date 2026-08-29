@@ -18,6 +18,7 @@ router.register(r"audit", views.AuditLogViewSet, basename="audit")
 router.register(r"drying-batches", views.DryingBatchViewSet, basename="drying-batch")
 router.register(r"kilns", views.KilnViewSet, basename="kiln")
 router.register(r"price-tiers", views.PriceTierViewSet, basename="price-tier")
+router.register(r"delivery-notes", views.DeliveryNoteViewSet, basename="delivery-note")
 
 urlpatterns = [
     path("", include(router.urls)),

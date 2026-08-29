@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client.js";
 import { useApp } from "../context/AppContext.jsx";
-import { useToast } from "../components/ToastContext.jsx";
 import useDocumentTitle from "../hooks/useDocumentTitle.jsx";
 import MetricCard from "../components/MetricCard.jsx";
 import Skeleton from "../components/Skeleton.jsx";
@@ -49,12 +48,10 @@ function Card({ title, right, children, className = "" }) {
 }
 
 export default function Dashboard() {
-  const { refreshKey, refresh, warehouses, warehouseId } = useApp();
-  const toast = useToast();
+  const { refreshKey, refresh } = useApp();
   useDocumentTitle("Tableau de bord");
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [ordering, setOrdering] = useState(false);
 
   useEffect(() => {
     api
@@ -62,27 +59,6 @@ export default function Dashboard() {
       .then((res) => setData(res.data))
       .catch((err) => setError(err.response?.data?.detail || err.message));
   }, [refreshKey]);
-
-  const createReorder = async () => {
-    if (!data?.reorder_alerts?.length) return;
-    if (!warehouseId && warehouses.length > 0) {
-      toast.error("Sélectionnez un dépôt avant de créer la réappro.");
-      return;
-    }
-    setOrdering(true);
-    try {
-      const { data: po } = await api.post("/reorders/", {
-        warehouse_id: warehouseId,
-        items: data.reorder_alerts.map((a) => ({ product_id: a.id })),
-      });
-      toast.success(`Réappro créée (${po.po_number}, draft).`);
-      refresh();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Échec de la création de la réappro.");
-    } finally {
-      setOrdering(false);
-    }
-  };
 
   if (error) return <div className="rounded-xl bg-rose/10 p-4 text-sm text-rose ring-1 ring-rose/30">Erreur: {error}</div>;
 
@@ -97,8 +73,8 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <Skeleton className="h-64 lg:col-span-3" />
-          <Skeleton className="h-64 lg:col-span-2" />
+          <Skeleton className="h-72 lg:col-span-3" />
+          <Skeleton className="h-72 lg:col-span-2" />
         </div>
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Skeleton className="h-64 lg:col-span-2" />
@@ -109,19 +85,18 @@ export default function Dashboard() {
   }
 
   const maxSpecies = Math.max(...data.species_volume.map((s) => s.volume_m3), 0.0001);
-  const maxMonth = Math.max(...data.monthly_sales_series.map((m) => m.total), 1);
-  const monthLabel = (key) => {
-    const [y, m] = key.split("-").map(Number);
-    const names = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-    return `${names[m - 1]} ${String(y).slice(2)}`;
-  };
+  const maxMovement = Math.max(...data.movement_series.flatMap((d) => [d.in_m3, d.out_m3]), 0.0001);
+  const movementTotal = data.movement_series.reduce(
+    (acc, d) => ({ in: acc.in + d.in_m3, out: acc.out + d.out_m3 }),
+    { in: 0, out: 0 }
+  );
 
   return (
     <div>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-frost">Tableau de bord</h1>
-          <p className="mt-0.5 text-sm text-ash">Vue d'ensemble du stock, des volumes et des ventes.</p>
+          <p className="mt-0.5 text-sm text-ash">Vue d'ensemble du stock, des volumes et des livraisons.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-4 rounded-xl bg-panel px-4 py-2 text-sm shadow-lg shadow-black/5 ring-1 ring-line">
@@ -157,18 +132,9 @@ export default function Dashboard() {
                   <h2 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-amber">
                     {data.reorder_alerts.length} produit(s) sous le seuil de réapprovisionnement
                   </h2>
-                  <p className="text-xs text-ash">
-                    Seuils m³ configurés — un clic génère un bon de commande fournisseur (draft) avec quantités suggérées.
-                  </p>
+                  <p className="text-xs text-ash">Seuils m³ configurés — envisagez un réapprovisionnement.</p>
                 </div>
               </div>
-              <button
-                onClick={createReorder}
-                disabled={ordering}
-                className="rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 disabled:opacity-50"
-              >
-                {ordering ? "Création…" : "⚡ Créer la réappro auto"}
-              </button>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {data.reorder_alerts.map((a) => (
@@ -181,7 +147,7 @@ export default function Dashboard() {
                     <p className="text-xs text-dim">
                       {fmt(a.stock_m3, 2)} / <span className="font-semibold text-amber">{fmt(a.threshold_m3, 2)} m³</span>
                     </p>
-                    <p className="text-[11px] font-semibold text-rose">suggesté : {fmt(a.suggested_qty, 0)} pcs</p>
+                    <p className="text-[11px] font-semibold text-rose">suggéré : {fmt(a.suggested_qty, 0)} pcs</p>
                   </div>
                 </div>
               ))}
@@ -209,18 +175,18 @@ export default function Dashboard() {
             accent="amber"
           />
           <MetricCard
+            title="Livraisons Aujourd'hui"
+            value={data.shipments_today}
+            sub={`${data.shipments_in_prep} en préparation`}
+            icon="🚚"
+            accent={data.shipments_today ? "amber" : "jade"}
+          />
+          <MetricCard
             title="Alertes Stock Bas"
             value={data.low_stock_count}
             sub={data.low_stock_count ? "produits à réapprovisionner" : "tout est bien approvisionné"}
             icon="!"
             accent={data.low_stock_count ? "amber" : "jade"}
-          />
-          <MetricCard
-            title="Ventes du Mois"
-            value={`${fmt(data.monthly_sales)} MAD`}
-            sub={`${data.movement_count} mouvements enregistrés`}
-            icon="◔"
-            accent="amber"
           />
         </div>
       </section>
@@ -229,38 +195,46 @@ export default function Dashboard() {
       <section aria-label="Analyse" className="mt-8">
         <SectionTitle>Analyse</SectionTitle>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Monthly sales trend */}
           <Card
-            title="Ventes par Mois (6 mois)"
+            title="Mouvements — Entrées / Sorties (14 jours)"
             className="lg:col-span-3"
-            right={<span className="text-xs text-dim">MAD</span>}
+            right={<span className="text-xs text-dim">m³</span>}
           >
-            <div className="flex h-48 items-end justify-between gap-3">
-              {data.monthly_sales_series.map((m) => (
-                <div key={m.key} className="group flex flex-1 flex-col items-center gap-2">
-                  <div className="relative flex w-full flex-1 items-end justify-center">
+            <div className="flex items-start justify-between gap-2 text-xs">
+              <span className="flex items-center gap-1.5 text-jade">
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-emerald-700 to-jade" /> Entrées
+              </span>
+              <span className="flex items-center gap-1.5 text-rose">
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-rose-800 to-rose" /> Sorties
+              </span>
+              <span className="text-dim">
+                +{fmt(movementTotal.in, 2)} / −{fmt(movementTotal.out, 2)} m³
+              </span>
+            </div>
+            <div className="mt-4 flex h-52 items-end gap-1.5">
+              {data.movement_series.map((d) => (
+                <div key={d.day} className="group flex flex-1 flex-col items-center gap-1.5">
+                  <div className="relative flex w-full flex-1 flex-col justify-end gap-0.5">
                     <div
-                      className={`w-full max-w-[46px] rounded-t-lg transition-all ${
-                        m.key === data.monthly_sales_series[data.monthly_sales_series.length - 1].key
-                          ? "bg-gradient-to-t from-copper to-amber"
-                          : "bg-raise group-hover:bg-line"
-                      }`}
-                      style={{ height: `${Math.max((m.total / maxMonth) * 100, 2)}%` }}
-                      title={`${monthLabel(m.key)} — ${fmt(m.total)} MAD`}
+                      className="w-full rounded-t bg-rose/80 transition-all group-hover:bg-rose"
+                      style={{ height: `${Math.max((d.out_m3 / maxMovement) * 50, 1)}%` }}
+                      title={`${d.label} — sorties ${fmt(d.out_m3, 3)} m³`}
+                    />
+                    <div
+                      className="w-full rounded-t bg-gradient-to-t from-emerald-700 to-jade transition-all group-hover:brightness-110"
+                      style={{ height: `${Math.max((d.in_m3 / maxMovement) * 50, 1)}%` }}
+                      title={`${d.label} — entrées ${fmt(d.in_m3, 3)} m³`}
                     />
                   </div>
-                  <span className="text-[11px] font-medium text-dim">{monthLabel(m.key)}</span>
+                  <span className="text-[10px] font-medium text-dim">{d.label}</span>
                 </div>
               ))}
             </div>
-            {data.monthly_sales_series.every((m) => m.total === 0) && (
-              <p className="mt-3 text-center text-xs text-dim">
-                Aucune vente facturée sur les 6 derniers mois.
-              </p>
+            {movementTotal.in === 0 && movementTotal.out === 0 && (
+              <p className="mt-3 text-center text-xs text-dim">Aucun mouvement de stock sur les 14 derniers jours.</p>
             )}
           </Card>
 
-          {/* Species distribution */}
           <Card title="Volume par Essence" className="lg:col-span-2" right={<span className="text-xs text-dim">m³</span>}>
             {data.species_volume.length === 0 ? (
               <p className="text-sm text-dim">Aucune donnée.</p>
@@ -290,7 +264,6 @@ export default function Dashboard() {
       <section aria-label="Stocks et activité" className="mt-8">
         <SectionTitle>Stocks &amp; Activité</SectionTitle>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          {/* Top products */}
           <Card
             title="Top Produits (volume m³)"
             className="lg:col-span-2"
@@ -316,7 +289,6 @@ export default function Dashboard() {
             )}
           </Card>
 
-          {/* Recent movements */}
           <Card
             title="Mouvements Récents"
             className="lg:col-span-3"
@@ -324,7 +296,7 @@ export default function Dashboard() {
           >
             <div className="divide-y divide-line">
               {data.recent_movements.length === 0 && (
-                <p className="py-8 text-center text-sm text-dim">Aucun mouvement — enregistrez un achat ou une vente.</p>
+                <p className="py-8 text-center text-sm text-dim">Aucun mouvement — enregistrez une livraison ou un ajustement.</p>
               )}
               {data.recent_movements.map((m) => {
                 const meta = TYPE_META[m.movement_type] || { label: m.movement_type, color: "text-ash bg-raise ring-line" };

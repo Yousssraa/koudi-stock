@@ -10,11 +10,29 @@ const input =
   "w-full rounded-lg border border-line bg-raise px-3 py-2 text-sm text-frost outline-none transition focus:border-amber/50 focus:ring-2 focus:ring-amber/20";
 const label = "mb-1 block text-xs font-semibold uppercase tracking-wide text-dim";
 
-const warehouseShort = (name) => (name || "").replace(/^Dépôt\s+/i, "") || name || "—";
+const MODE_META = {
+  add: {
+    title: "Ajouter du stock",
+    action: "Ajouter",
+    sign: "positive",
+    tone: "text-jade",
+    accent: "from-jade to-jade/60",
+    note: "Augmente la quantité enregistrée dans le dépôt sélectionné.",
+  },
+  subtract: {
+    title: "Retirer du stock",
+    action: "Retirer",
+    sign: "negative",
+    tone: "text-rose",
+    accent: "from-rose to-rose/60",
+    note: "Diminue la quantité enregistrée (casse, perte, vente manuelle…).",
+  },
+};
 
-export default function AdjustmentModal({ open, onClose, product, warehouses = [], onSaved }) {
+export default function StockAdjustModal({ open, mode = "add", onClose, product, warehouses = [], onSaved }) {
+  const meta = MODE_META[mode] || MODE_META.add;
   const [warehouseId, setWarehouseId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -22,11 +40,11 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
   useEffect(() => {
     if (!open) return;
     setWarehouseId(warehouses[0]?.id ?? "");
-    setQuantity("");
+    setQuantity("1");
     setReason("");
     setError(null);
     setSubmitting(false);
-  }, [open, warehouses]);
+  }, [open, warehouses, mode]);
 
   if (!open) return null;
 
@@ -35,23 +53,24 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
   const currentQty = currentRow?.quantity ?? 0;
 
   const q = parseFloat(quantity);
-  const validQty = !isNaN(q) && q !== 0;
-  const resultingQty = validQty ? currentQty + q : null;
+  const validQty = !isNaN(q) && q > 0;
+  const delta = meta.sign === "positive" ? q : -q;
+  const resultingQty = validQty ? currentQty + delta : null;
   const wouldGoNegative = resultingQty !== null && resultingQty < 0;
 
   const submit = async () => {
     setError(null);
-    if (!warehouseId) return setError("Sélectionnez le dépôt à ajuster.");
-    if (!validQty) return setError("Quantité invalide (doit être non nulle).");
+    if (!warehouseId) return setError("Sélectionnez le dépôt.");
+    if (!validQty) return setError("Quantité invalide (strictement positive).");
     if (wouldGoNegative)
-      return setError(`L'ajustement ferait passer le stock sous zéro (${fmt(currentQty)} disponible).`);
+      return setError(`Stock insuffisant (${fmt(currentQty)} disponible dans ce dépôt).`);
 
     setSubmitting(true);
     try {
       const { data } = await api.post("/stock-adjustments/", {
         product_id: product.id,
         warehouse_id: Number(warehouseId),
-        quantity: q,
+        quantity: delta,
         reason: reason.trim(),
       });
       onSaved?.(data);
@@ -61,9 +80,7 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
       setError(
         typeof detail === "string"
           ? detail
-          : Array.isArray(detail)
-            ? detail.map((d) => (typeof d === "string" ? d : JSON.stringify(d))).join(" · ")
-            : err.response?.data?.quantity?.[0] || err.message
+          : err.response?.data?.quantity?.[0] || err.message
       );
     } finally {
       setSubmitting(false);
@@ -81,7 +98,7 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
       >
         <div className="flex items-center justify-between border-b border-line bg-raise px-6 py-4">
           <div>
-            <h2 className="font-display text-lg font-bold text-frost">Ajustement de Stock</h2>
+            <h2 className={`font-display text-lg font-bold ${meta.tone}`}>{meta.title}</h2>
             <p className="text-xs text-dim">
               {product?.name} · <span className="font-mono">{product?.sku}</span>
             </p>
@@ -93,14 +110,11 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
 
         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
           <p className="rounded-lg bg-skyx/10 px-3 py-2 text-xs text-skyx ring-1 ring-skyx/30">
-            Une quantité <strong>positive</strong> ajoute du stock, une quantité <strong>négative</strong> en
-            retire (casse, perte, mauvais comptage). L'écart est tracé dans le journal des mouvements.
+            {meta.note} L'opération est tracée dans le journal des mouvements.
           </p>
 
           <div>
-            <label className={label}>
-              Dépôt
-            </label>
+            <label className={label}>Dépôt</label>
             <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className={input}>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
@@ -111,28 +125,25 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
           </div>
 
           <div>
-            <label className={label}>
-              Quantité (signée)
-            </label>
+            <label className={label}>Quantité</label>
             <input
               type="number"
               step="any"
+              min="0"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              placeholder="ex. 12.5 ou -4"
+              placeholder="ex. 40"
               className={input}
             />
           </div>
 
           <div>
-            <label className={label}>
-              Motif (optionnel)
-            </label>
+            <label className={label}>Motif (optionnel)</label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Inventaire, casse, perte…"
+              placeholder={mode === "add" ? "Achat, réception…" : "Vente, casse, perte…"}
               className={input}
             />
           </div>
@@ -143,16 +154,14 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
               <p className="truncate text-sm font-semibold text-frost">
                 {warehouses.find((w) => w.id === Number(warehouseId))?.name || "—"}
               </p>
-              <p className="truncate text-[11px] text-dim">{warehouseShort(currentRow?.warehouse_name)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-dim">Actuel</p>
               <p className="font-display text-xl font-bold text-frost">{fmt(currentQty)}</p>
-              <p className="text-[11px] text-dim">{currentRow?.volume_m3 ? `${fmt(currentRow.volume_m3, 4)} m³` : ""}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-dim">Résultat</p>
-              <p className={`font-display text-xl font-bold ${wouldGoNegative ? "text-rose" : "text-jade"}`}>
+              <p className={`font-display text-xl font-bold ${wouldGoNegative ? "text-rose" : "text-frost"}`}>
                 {resultingQty === null ? "—" : fmt(resultingQty)}
               </p>
               {wouldGoNegative && <p className="text-[11px] font-semibold text-rose">Sous zéro !</p>}
@@ -175,9 +184,9 @@ export default function AdjustmentModal({ open, onClose, product, warehouses = [
             <button
               onClick={submit}
               disabled={submitting}
-              className="rounded-lg bg-gradient-to-r from-amber to-copper px-5 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 disabled:opacity-60"
+              className={`rounded-lg bg-gradient-to-r ${meta.accent} px-5 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 disabled:opacity-60`}
             >
-              {submitting ? "Envoi…" : "Enregistrer l'ajustement"}
+              {submitting ? "Envoi…" : `${meta.action} ${fmt(validQty ? q : 0)}`}
             </button>
           </div>
         </div>

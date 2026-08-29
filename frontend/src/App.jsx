@@ -1,14 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import Inventory from "./pages/Inventory.jsx";
-import Transactions from "./pages/Transactions.jsx";
-import Clients from "./pages/Clients.jsx";
-import Contacts from "./pages/Contacts.jsx";
-import Settings from "./pages/Settings.jsx";
-import Drying from "./pages/Drying.jsx";
+import Stock from "./pages/Stock.jsx";
+import Transport from "./pages/Transport.jsx";
 import Archive from "./pages/Archive.jsx";
-import Audit from "./pages/Audit.jsx";
+import Settings from "./pages/Settings.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Login from "./pages/Login.jsx";
 import { isAuthenticated } from "./auth.js";
@@ -30,14 +26,10 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="transactions" element={<Transactions />} />
-        <Route path="clients" element={<Clients />} />
-        <Route path="contacts" element={<Contacts />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="drying" element={<Drying />} />
+        <Route path="stock" element={<Stock />} />
+        <Route path="transport" element={<Transport />} />
         <Route path="archive" element={<Archive />} />
-        <Route path="audit" element={<Audit />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

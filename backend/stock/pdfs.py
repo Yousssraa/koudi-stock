@@ -23,7 +23,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from .models import CompanyProfile, compute_volume_m3
+from .models import CompanyProfile, DeliveryNote, compute_volume_m3
 
 VAT_RATE = Decimal("0.20")  # TVA 20%
 
@@ -498,6 +498,200 @@ def _build_purchase_order_doc(po):
 
 def build_purchase_order_pdf(po):
     return _build_purchase_order_doc(po)
+
+
+def build_delivery_note_pdf(bl, include_signatures=True):
+    """Render a Bon de Livraison (delivery note) optimised for printing.
+
+    Shows the shipping details (client, driver, truck plate), the line items
+    with their computed volume (m³), and — when ``include_signatures`` — two
+    signature fields (recipient and shipper) so the printed note can be signed
+    on delivery.
+    """
+    title = "BON DE LIVRAISON"
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=14 * mm, bottomMargin=14 * mm,
+        leftMargin=14 * mm, rightMargin=14 * mm,
+    )
+
+    story = []
+
+    # --- Header band -----------------------------------------------------
+    comp = _company()
+    info_rows = [
+        [Paragraph(comp["address"], _SUB_HEAD), ""],
+        [Paragraph(comp["contact"], _SUB_HEAD), ""],
+        [Paragraph(comp["tax_id"], _SUB_HEAD), ""],
+    ]
+    status_label = dict(DeliveryNote.Status.choices).get(bl.status, bl.status)
+    header_rows = [
+        [
+            Paragraph(f"<b>{comp['name']}</b>", ParagraphStyle(
+                "H1", fontName="Helvetica-Bold", fontSize=20, textColor=colors.HexColor("#74482a"))),
+            Paragraph(f"<b>{title}</b>", ParagraphStyle(
+                "DT", fontName="Helvetica-Bold", fontSize=15, alignment=TA_RIGHT,
+                textColor=colors.HexColor("#3b2f23")),
+            ),
+        ],
+        [
+            Paragraph(comp["tagline"], _SUB_HEAD),
+            Paragraph(
+                f"{title} N° <b>{bl.bl_number}</b><br/>Date : {bl.order_date:%d/%m/%Y}<br/>"
+                f"Statut : <b>{status_label}</b>",
+                ParagraphStyle("DTR", parent=_P, alignment=TA_RIGHT),
+            ),
+        ],
+    ] + [row for row in info_rows if row[0].text]
+    header = Table(header_rows, colWidths=[doc.width * 0.55, doc.width * 0.45])
+    header.setStyle(TableStyle([
+        ("SPAN", (0, 0), (1, 0)),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor("#8f6233")),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 6 * mm))
+
+    # --- Delivery info ----------------------------------------------------
+    transport = " · ".join(b for b in (
+        f"Chauffeur : {bl.driver_name}" if bl.driver_name else None,
+        f"Véhicule : {bl.truck_plate}" if bl.truck_plate else None,
+    ) if b) or "—"
+    info = Table(
+        [
+            [
+                Paragraph("<b>CLIENT</b>", _SUB_HEAD),
+                Paragraph("<b>DÉPÔT / EXPÉDITION</b>", _SUB_HEAD),
+                Paragraph("<b>TRANSPORT</b>", _SUB_HEAD),
+            ],
+            [
+                Paragraph(
+                    f"<b>{bl.client.company_name}</b><br/>{bl.client.contact_name or ''}"
+                    f"<br/>{bl.client.address or ''}<br/>{bl.client.tax_id or ''}",
+                    _P,
+                ),
+                Paragraph(f"{bl.warehouse.name}<br/>{bl.warehouse.address or ''}", _P),
+                Paragraph(f"Livreur : {bl.driver_name or '—'}<br/>Immatriculation : {bl.truck_plate or '—'}", _P),
+            ],
+        ],
+        colWidths=[doc.width * 0.40, doc.width * 0.30, doc.width * 0.30],
+    )
+    info.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#efe4d2")),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.4, colors.HexColor("#ddccb0")),
+        ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(info)
+    story.append(Spacer(1, 6 * mm))
+
+    # --- Line items -------------------------------------------------------
+    style = getSampleStyleSheet()
+    line_style = ParagraphStyle("LT", parent=style["BodyText"], fontSize=7.5, leading=9)
+    head_style = ParagraphStyle(
+        "TH", parent=line_style, fontName="Helvetica-Bold", textColor=colors.white,
+    )
+
+    table_data = [[
+        Paragraph("RÉF", head_style),
+        Paragraph("DÉSIGNATION", head_style),
+        Paragraph("DIMENSIONS (mm)", head_style),
+        Paragraph("QTÉ", head_style),
+        Paragraph("VOLUME (m³)", head_style),
+        Paragraph("PU (MAD/m³)", head_style),
+        Paragraph("MONTANT HT", head_style),
+    ]]
+
+    total_volume = Decimal("0")
+    subtotal = Decimal("0")
+    for item in bl.items.all():
+        vol = item.volume_m3 or Decimal("0")
+        total_volume += vol
+        subtotal += Decimal(str(item.line_total))
+        dims = item.product.dimensions_display
+        table_data.append([
+            Paragraph(item.product.sku, line_style),
+            Paragraph(item.product.name, line_style),
+            Paragraph(dims, line_style),
+            Paragraph(_num(item.quantity, 0), line_style),
+            Paragraph(_num(vol, 4), line_style),
+            Paragraph(_num(item.unit_price, 2), line_style),
+            Paragraph(_money(item.line_total), line_style),
+        ])
+
+    table_data.append([
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("", line_style),
+        Paragraph("<b>TOTAL HT</b>", line_style),
+        Paragraph(f"<b>{_money(subtotal)}</b>", line_style),
+    ])
+
+    lines_table = Table(table_data, colWidths=[
+        doc.width * 0.10, doc.width * 0.28, doc.width * 0.15,
+        doc.width * 0.08, doc.width * 0.11, doc.width * 0.14, doc.width * 0.14,
+    ], repeatRows=1)
+    lines_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#74482a")),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f6f0e4")),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(lines_table)
+    story.append(Spacer(1, 3 * mm))
+    story.append(Paragraph(f"<b>Volume total bois : {_num(total_volume, 4)} m³</b>", ParagraphStyle(
+        "VOL", parent=_SUB_HEAD, fontSize=9)))
+    if bl.notes:
+        story.append(Spacer(1, 3 * mm))
+        story.append(Paragraph(
+            f"<b>Notes :</b> {bl.notes}", ParagraphStyle("NOTES", parent=_P, fontSize=7.5),
+        ))
+    story.append(Spacer(1, 8 * mm))
+
+    # --- Signature fields -------------------------------------------------
+    if include_signatures:
+        sign = Table(
+            [
+                [
+                    Paragraph("<b>LE CLIENT (cachet & signature)</b>", _SUB_HEAD),
+                    Paragraph("<b>L'EXPÉDITEUR</b>", _SUB_HEAD),
+                ],
+                ["", ""],
+                ["", ""],
+            ],
+            colWidths=[doc.width * 0.5, doc.width * 0.5],
+        )
+        sign.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        story.append(sign)
+        story.append(Spacer(1, 6 * mm))
+
+    # --- Footer -----------------------------------------------------------
+    story.append(Paragraph(
+        "<b>Conditions :</b> Marchandise livrée telle que décrite ci-dessus. "
+        "Toute réserve doit être émise à la réception.",
+        ParagraphStyle("F", parent=_P, fontSize=7.5),
+    ))
+    footer_bits = [b for b in (comp["name"], comp["address"], comp["tax_id"]) if b]
+    story.append(Paragraph(
+        " — ".join(footer_bits),
+        ParagraphStyle("FB", parent=_P, fontSize=6.5, textColor=colors.HexColor("#99856b")),
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
 
 
 # ---------------------------------------------------------------------------

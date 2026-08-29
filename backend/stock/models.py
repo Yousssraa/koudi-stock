@@ -786,3 +786,87 @@ class CompanyProfile(models.Model):
     def current(cls):
         profile, _ = cls.objects.get_or_create(pk=1)
         return profile
+
+
+# ---------------------------------------------------------------------------
+# Transport & Logistique — Bon de Livraison (Delivery Note)
+# ---------------------------------------------------------------------------
+class DeliveryNote(models.Model):
+    """A delivery note (Bon de Livraison) tracking a shipment to a client.
+
+    A shipment deducts stock by logging one ``sale_out`` ledger row per line
+    (the ``maintain_inventory`` trigger decrements the warehouse inventory).
+    The same ledger rows feed the transport/archive audit trail, so a BL is
+    always traceable back to a dated, signed mechanical movement.
+    """
+
+    class Status(models.TextChoices):
+        PREPARATION = "preparation"   # En préparation
+        IN_TRANSIT = "in_transit"     # En cours
+        DELIVERED = "delivered"       # Livré
+
+    bl_number = models.TextField(unique=True)
+    client = models.ForeignKey(Client, on_delete=models.PROTECT, db_index=True)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, db_index=True)
+    driver_name = models.TextField(blank=True, null=True)
+    truck_plate = models.TextField(blank=True, null=True)
+    status = models.TextField(
+        default=Status.PREPARATION, choices=Status.choices, db_index=True
+    )
+    order_date = models.DateField(auto_now_add=True)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "delivery_notes"
+        ordering = ["-order_date", "-id"]
+
+    def __str__(self):
+        return self.bl_number
+
+    @property
+    def total_volume_m3(self):
+        total = Decimal("0")
+        for item in self.items.all():
+            v = item.volume_m3
+            if v is not None:
+                total += v
+        return total
+
+    @property
+    def total_amount(self):
+        total = Decimal("0")
+        for item in self.items.all():
+            total += item.line_total
+        return total
+
+
+class DeliveryNoteItem(models.Model):
+    """One line of a Bon de Livraison: a product, its shipped quantity and the
+    line value (volume m³ × unit price per m³)."""
+
+    delivery_note = models.ForeignKey(
+        DeliveryNote, on_delete=models.CASCADE, related_name="items", db_index=True
+    )
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, db_index=True)
+    quantity = models.DecimalField(max_digits=14, decimal_places=4)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    line_total = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+
+    class Meta:
+        db_table = "delivery_note_items"
+
+    def __str__(self):
+        return f"{self.delivery_note} - {self.product}"
+
+    @property
+    def volume_m3(self):
+        return compute_volume_m3(
+            self.product.thickness_mm,
+            self.product.width_mm,
+            self.product.length_mm,
+            self.quantity,
+        )

@@ -8,6 +8,8 @@ from .models import (
     AuditLog,
     Client,
     CompanyProfile,
+    DeliveryNote,
+    DeliveryNoteItem,
     DryingBatch,
     Inventory,
     Kiln,
@@ -740,3 +742,90 @@ class CompanyProfileSerializer(serializers.ModelSerializer):
             "ice", "registre_commerce", "identifiant_fiscal",
             "patente", "cnss", "bank_name", "bank_rib",
         ]
+
+
+# ---------------------------------------------------------------------------
+# Transport & Logistique — Bon de Livraison (Delivery Note)
+# ---------------------------------------------------------------------------
+class DeliveryNoteItemReadSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(source="product.name", read_only=True)
+    sku = serializers.CharField(source="product.sku", read_only=True)
+    volume_m3 = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DeliveryNoteItem
+        fields = ["id", "product", "sku", "quantity", "unit_price", "line_total", "volume_m3"]
+
+    def get_volume_m3(self, obj):
+        v = obj.volume_m3
+        return None if v is None else float(v)
+
+
+class DeliveryNoteSerializer(serializers.ModelSerializer):
+    client = serializers.CharField(source="client.company_name", read_only=True)
+    client_id = serializers.PrimaryKeyRelatedField(
+        source="client", queryset=Client.objects.all()
+    )
+    warehouse = serializers.CharField(source="warehouse.name", read_only=True)
+    warehouse_id = serializers.PrimaryKeyRelatedField(
+        source="warehouse", queryset=Warehouse.objects.all(), write_only=True
+    )
+    items = DeliveryNoteItemReadSerializer(many=True, read_only=True)
+    status_label = serializers.SerializerMethodField()
+    total_volume_m3 = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DeliveryNote
+        fields = [
+            "id", "bl_number", "client", "client_id", "warehouse", "warehouse_id",
+            "driver_name", "truck_plate", "status", "status_label",
+            "order_date", "shipped_at", "delivered_at", "notes",
+            "created_at", "items", "total_volume_m3", "total_amount",
+        ]
+
+    def get_status_label(self, obj):
+        return {
+            DeliveryNote.Status.PREPARATION: "En préparation",
+            DeliveryNote.Status.IN_TRANSIT: "En cours",
+            DeliveryNote.Status.DELIVERED: "Livré",
+        }.get(obj.status)
+
+    def get_total_volume_m3(self, obj):
+        return round(float(obj.total_volume_m3), 4)
+
+    def get_total_amount(self, obj):
+        return round(float(obj.total_amount), 2)
+
+
+class DeliveryNoteCreateItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=4, min_value=Decimal("0.0001"))
+    price_per_m3 = serializers.DecimalField(
+        max_digits=14, decimal_places=2, required=False, min_value=Decimal("0")
+    )
+    lot_number = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_product_id(self, value):
+        if not Product.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Produit introuvable ou inactif.")
+        return value
+
+
+class DeliveryNoteCreateSerializer(serializers.Serializer):
+    client_id = serializers.IntegerField()
+    warehouse_id = serializers.IntegerField()
+    driver_name = serializers.CharField(required=False, allow_blank=True)
+    truck_plate = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    items = DeliveryNoteCreateItemSerializer(many=True, min_length=1)
+
+    def validate_client_id(self, value):
+        if not Client.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Client introuvable ou inactif.")
+        return value
+
+    def validate_warehouse_id(self, value):
+        if not Warehouse.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Dépôt introuvable ou inactif.")
+        return value
