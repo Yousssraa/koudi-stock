@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import SiteLayout from "./components/SiteLayout.jsx";
 import Accueil from "./pages/site/Accueil.jsx";
 import Produits from "./pages/site/Produits.jsx";
+import Produit from "./pages/site/Produit.jsx";
 import Categorie from "./pages/site/Categorie.jsx";
 import Devis from "./pages/site/Devis.jsx";
 import Contact from "./pages/site/Contact.jsx";
@@ -32,6 +33,7 @@ export default function App() {
       <Route element={<SiteLayout />}>
         <Route index element={<Accueil />} />
         <Route path="produits" element={<Produits />} />
+        <Route path="produit/:id" element={<Produit />} />
         <Route path="categorie/:key" element={<Categorie />} />
         <Route path="devis" element={<Devis />} />
         <Route path="contact" element={<Contact />} />
