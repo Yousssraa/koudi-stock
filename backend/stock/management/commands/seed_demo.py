@@ -1,11 +1,16 @@
-"""Seed a realistic temporary demo dataset (timber, MAD/m³).
+"""Seed a realistic temporary demo dataset (timber & panels, MAD/m³).
 
-Creates wood species, products, clients, suppliers plus one purchase and one
-sale (through the real transactional endpoints) so the invoice / purchase-order
-PDFs and the whole workflow can be validated end-to-end.
+Data mirrors the public activity of KOUDI WOOD (Casablanca): solid lumber
+(hêtre, acajou, chêne, noyer) plus derived panels (latté, contreplaqué, MDF,
+Stratidecor), sold and invoiced per cubic metre.
 
-Everything created here is test data: run ``python manage.py purge_demo`` to
-wipe it all the moment you have real information.
+Creates wood species, products, clients and suppliers, then records several
+purchases and sales through the real transactional endpoints so the invoice /
+quotation / purchase-order PDFs and the whole workflow can be validated
+end-to-end.
+
+Everything created here is TEMPORARY test data: run ``python manage.py
+purge_demo`` to wipe it all the moment you have real information.
 
 Run:  python manage.py seed_demo
 """
@@ -26,10 +31,10 @@ from stock.models import (
 
 
 class Command(BaseCommand):
-    help = "Seed realistic temporary demo data (wood species, products, clients, suppliers + 1 sale & 1 purchase)."
+    help = "Seed realistic temporary data (KOUDI WOOD range + sample clients/suppliers/orders)."
 
     def handle(self, *args, **options):
-        self.stdout.write("Seeding temporary demo data…")
+        self.stdout.write("Seeding temporary demo data (KOUDI WOOD range)…")
 
         wh_casa = Warehouse.objects.filter(code="WH-CASABLANCA").first()
         wh_tanger = Warehouse.objects.filter(code="WH-TANGER").first()
@@ -39,12 +44,11 @@ class Command(BaseCommand):
 
         # --- Wood species -----------------------------------------------------
         species = [
-            ("Chêne", "Quercus robur", "Bois noble", 740),
-            ("Merisier", "Prunus avium", "Bois noble", 620),
             ("Hêtre", "Fagus sylvatica", "Bois blanc", 700),
-            ("Frêne", "Fraxinus excelsior", "Bois blanc", 690),
+            ("Acajou", "Swietenia macrophylla", "Bois exotique", 590),
+            ("Chêne", "Quercus robur", "Bois noble", 740),
             ("Noyer", "Juglans regia", "Bois noble", 640),
-            ("Iroko", "Milicia excelsa", "Bois exotique", 660),
+            ("Plaqué bois (dérivés)", "Composite", "Panneaux", 680),
         ]
         species_ids = {}
         for name, sci, cat, dens in species:
@@ -54,19 +58,22 @@ class Command(BaseCommand):
             )
             species_ids[name] = wt.id
 
-        # --- Products (dimensions in mm -> m³ volume) -------------------------
+        # --- Products: solid lumber + panels (L x W x T mm -> m³) -------------
+        # name, species, L, W, T (mm), grade, cost/m3, sale/m3, mc
         product_specs = [
-            # name, species, L, W, T (mm), grade, cost/m3, sale/m3, mc
-            ("Plateau Chêne A", "Chêne", 2500, 180, 30, "FAS", 6500, 9800, 10),
-            ("Plateau Chêne B", "Chêne", 2500, 150, 28, "Select", 5800, 8600, 11),
-            ("Plateau Merisier", "Merisier", 2200, 200, 32, "FAS", 7200, 10900, 10),
-            ("Planche Hêtre", "Hêtre", 2000, 120, 25, "Standard", 3100, 4900, 12),
+            ("Plateau Hêtre", "Hêtre", 2500, 200, 40, "FAS", 5200, 7900, 10),
+            ("Plateau Chêne Rouge", "Chêne", 2500, 180, 32, "FAS", 6800, 10200, 10),
+            ("Plateau Chêne Clair", "Chêne", 2500, 150, 28, "Select", 6100, 9200, 11),
+            ("Plateau Acajou", "Acajou", 2400, 190, 34, "FAS", 8900, 13300, 9),
             ("Plateau Noyer", "Noyer", 2600, 190, 34, "FAS", 8400, 12500, 9),
-            ("Planche Iroko", "Iroko", 2200, 140, 26, "Select", 3800, 5800, 13),
+            ("Latté 19 mm", "Plaqué bois (dérivés)", 2500, 1220, 19, "Standard", 2050, 3300, 12),
+            ("Contreplaqué 18 mm", "Plaqué bois (dérivés)", 2500, 1220, 18, "Select", 2350, 3800, 12),
+            ("MDF 18 mm", "Plaqué bois (dérivés)", 2440, 1220, 18, "Standard", 1750, 2900, 11),
+            ("Stratidecor 10 mm", "Plaqué bois (dérivés)", 2440, 1220, 10, "Select", 3100, 4800, 10),
         ]
         product_ids = {}
         for name, sp, l, w, t, grade, cost, sale, mc in product_specs:
-            sku = "DEMO-" + "".join(ch for ch in name if ch.isalnum()).replace(" ", "")[:12].upper()
+            sku = "KW-" + "".join(ch for ch in name if ch.isalnum())[:16].upper()
             prod, _ = Product.objects.get_or_create(
                 sku=sku,
                 defaults=dict(
@@ -89,8 +96,9 @@ class Command(BaseCommand):
 
         # --- Clients ----------------------------------------------------------
         clients = [
-            ("Société Menuiserie Moderna", "CLI modern furniture", "contact@moderna.ma", "0612-345678"),
-            ("Ateliers du Bois Doukkala", "M. Karim", "contact@doukkala-bois.ma", "0633-111222"),
+            ("Ateliers Menais", "M. Omar", "menais@example.ma", "0612-345678"),
+            ("Menuiserie El Farah", "Mme Salma", "elfarah@example.ma", "0633-111222"),
+            ("Confort Habitat SARL", "M. Youssef", "confort@example.ma", "0644-555777"),
         ]
         client_ids = {}
         for cn, contact, email, phone in clients:
@@ -106,8 +114,9 @@ class Command(BaseCommand):
 
         # --- Suppliers --------------------------------------------------------
         suppliers = [
-            ("Scierie Atlas du Rif", "scierie.atlas@rif.ma", "0655-999000"),
-            ("Bois Import Tanger", "import@tanger-bois.ma", "0666-555444"),
+            ("Scierie Atlas du Rif", "scierie.atlas@example.ma", "0655-999000"),
+            ("Bois Import Tanger", "import.tanger@example.ma", "0666-555444"),
+            ("Panneaux & Dérivés SA", "panneaux@example.ma", "0677-123456"),
         ]
         supplier_ids = {}
         for sn, email, phone in suppliers:
@@ -129,34 +138,61 @@ class Command(BaseCommand):
             return
         tc.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"
 
-        # --- One purchase (feeds stock + enables PO PDF) ----------------------
-        sup_name = suppliers[0][0]
-        purchase_payload = {
-            "supplier_id": supplier_ids[sup_name],
-            "warehouse_id": wh_casa.id,
-            "items": [
-                {"product_id": product_ids["Plateau Chêne A"], "quantity": 20,
-                 "price_per_m3": 6500, "lot_number": "LOT-DEMO-001"},
-                {"product_id": product_ids["Planche Hêtre"], "quantity": 35,
-                 "price_per_m3": 3100, "lot_number": "LOT-DEMO-001"},
-            ],
-            "fees": {"freight_cost": 800, "customs_cost": 450, "handling_cost": 120},
-        }
-        pr = tc.post("/api/purchases/", purchase_payload, content_type="application/json")
-        print("  purchase:", pr.status_code, pr.json() if pr.status_code >= 400 else "OK")
+        # --- Purchases (feed stock + enable PO PDFs) --------------------------
+        purchases = [
+            {
+                "supplier": suppliers[0][0], "warehouse": wh_casa,
+                "items": [
+                    ("Plateau Hêtre", 30, 5200, "LOT-A1"),
+                    ("Plateau Chêne Rouge", 22, 6800, "LOT-A1"),
+                ],
+                "fees": {"freight_cost": 1200, "customs_cost": 600, "handling_cost": 180},
+            },
+            {
+                "supplier": suppliers[2][0], "warehouse": wh_tanger,
+                "items": [
+                    ("MDF 18 mm", 40, 1750, "LOT-P2"),
+                    ("Contreplaqué 18 mm", 25, 2350, "LOT-P2"),
+                ],
+                "fees": {"freight_cost": 900, "customs_cost": 300, "handling_cost": 150},
+            },
+        ]
+        for p in purchases:
+            payload = {
+                "supplier_id": supplier_ids[p["supplier"]],
+                "warehouse_id": p["warehouse"].id,
+                "items": [
+                    {"product_id": product_ids[name], "quantity": qty,
+                     "price_per_m3": price, "lot_number": lot}
+                    for name, qty, price, lot in p["items"]
+                ],
+                "fees": p["fees"],
+            }
+            pr = tc.post("/api/purchases/", payload, content_type="application/json")
+            print("  purchase:", pr.status_code, pr.json() if pr.status_code >= 400 else "OK")
 
-        # --- One sale (enables invoice/quotation PDF) -------------------------
-        cl_name = clients[0][0]
-        sale_payload = {
-            "client_id": client_ids[cl_name],
-            "warehouse_id": wh_casa.id,
-            "items": [
-                {"product_id": product_ids["Plateau Chêne A"], "quantity": 6, "price_per_m3": 9800},
-                {"product_id": product_ids["Planche Hêtre"], "quantity": 10, "price_per_m3": 4900},
-            ],
-        }
-        sr = tc.post("/api/sales/", sale_payload, content_type="application/json")
-        print("  sale:", sr.status_code, sr.json() if sr.status_code >= 400 else "OK")
+        # --- Sales (enable invoice/quotation PDFs) ----------------------------
+        sales = [
+            {
+                "client": clients[1][0], "warehouse": wh_casa,
+                "items": [("Plateau Chêne Rouge", 4, 10200), ("Plateau Hêtre", 6, 7900)],
+            },
+            {
+                "client": clients[2][0], "warehouse": wh_tanger,
+                "items": [("MDF 18 mm", 8, 2900), ("Contreplaqué 18 mm", 6, 3800)],
+            },
+        ]
+        for s in sales:
+            payload = {
+                "client_id": client_ids[s["client"]],
+                "warehouse_id": s["warehouse"].id,
+                "items": [
+                    {"product_id": product_ids[name], "quantity": qty, "price_per_m3": price}
+                    for name, qty, price in s["items"]
+                ],
+            }
+            sr = tc.post("/api/sales/", payload, content_type="application/json")
+            print("  sale:", sr.status_code, sr.json() if sr.status_code >= 400 else "OK")
 
         self.stdout.write(self.style.SUCCESS(
             "Done. Démo temporaire prête. "
@@ -164,5 +200,6 @@ class Command(BaseCommand):
         ))
         self.stdout.write("Crée :")
         for m, label in [(WoodType, "essences"), (Product, "produits"), (Client, "clients"),
-                        (Supplier, "fournisseurs"), (PurchaseOrder, "bons d'achat"), (SalesOrder, "ventes")]:
+                         (Supplier, "fournisseurs"), (PurchaseOrder, "bons d'achat"),
+                         (SalesOrder, "ventes")]:
             self.stdout.write(f"  {m.objects.count():>3}  {label}")
