@@ -2,19 +2,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0f172a;           /* page background (slate) */
-  --color-panel: #1e293b;         /* cards & surfaces (slate-800) */
-  --color-raise: #27324a;         /* raised / hover / inputs (slate-750) */
-  --color-line: #334155;          /* borders & dividers (slate-700) */
-  --color-amber: #d97706;         /* primary accent (amber-600 / wood) */
-  --color-amberl: #f59e0b;        /* light accent (amber-500) */
-  --color-copper: #b45309;        /* deep accent (amber-700) */
-  --color-frost: #e2e8f0;         /* primary text (slate-200) */
-  --color-ash: #94a3b8;           /* secondary text (slate-400) */
-  --color-dim: #64748b;           /* muted text (slate-500) */
-  --color-jade: #34d399;          /* success / inflow (emerald-400) */
-  --color-rose: #fb7185;          /* danger / outflow (rose-400) */
-  --color-skyx: #7dd3fc;          /* info (sky-300) */
+  --color-ink: #f3ece0;           /* page background (beige) */
+  --color-panel: #fbf7ef;         /* cards & surfaces (cream) */
+  --color-raise: #efe4d2;         /* raised / hover / inputs (tan) */
+  --color-line: #ddccb0;          /* borders & dividers (sand) */
+  --color-amber: #8f6233;         /* primary accent (brown) */
+  --color-amberl: #c89f6b;        /* light accent (tan) */
+  --color-copper: #74482a;        /* deep accent (dark brown) */
+  --color-frost: #3b2f23;         /* primary text (dark brown) */
+  --color-ash: #6e5b45;           /* secondary text (brown) */
+  --color-dim: #99856b;           /* muted text (light brown) */
+  --color-jade: #3f8a66;          /* success / inflow (muted green) */
+  --color-rose: #b24c3b;          /* danger / outflow (terracotta) */
+  --color-skyx: #7a6a4f;          /* info (taupe) */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -26,8 +26,8 @@ html {
 body {
   background-color: var(--color-ink);
   background-image:
-    radial-gradient(1100px 500px at 88% -8%, rgba(217, 119, 6, 0.10), transparent 60%),
-    radial-gradient(900px 450px at -8% 108%, rgba(52, 211, 153, 0.05), transparent 60%);
+    radial-gradient(1100px 500px at 88% -8%, rgba(143, 98, 51, 0.08), transparent 60%),
+    radial-gradient(900px 450px at -8% 108%, rgba(63, 138, 102, 0.06), transparent 60%);
   background-attachment: fixed;
   color: var(--color-frost);
 }
@@ -37,11 +37,11 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #cebc9f;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #bfa98a;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

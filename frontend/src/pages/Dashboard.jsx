@@ -202,10 +202,10 @@ export default function Dashboard() {
           >
             <div className="flex items-start justify-between gap-2 text-xs">
               <span className="flex items-center gap-1.5 text-jade">
-                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-emerald-700 to-jade" /> Entrées
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-jade/40 to-jade" /> Entrées
               </span>
               <span className="flex items-center gap-1.5 text-rose">
-                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-rose-800 to-rose" /> Sorties
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-rose/40 to-rose" /> Sorties
               </span>
               <span className="text-dim">
                 +{fmt(movementTotal.in, 2)} / −{fmt(movementTotal.out, 2)} m³
@@ -221,7 +221,7 @@ export default function Dashboard() {
                       title={`${d.label} — sorties ${fmt(d.out_m3, 3)} m³`}
                     />
                     <div
-                      className="w-full rounded-t bg-gradient-to-t from-emerald-700 to-jade transition-all group-hover:brightness-110"
+                      className="w-full rounded-t bg-gradient-to-t from-jade/40 to-jade transition-all group-hover:brightness-110"
                       style={{ height: `${Math.max((d.in_m3 / maxMovement) * 50, 1)}%` }}
                       title={`${d.label} — entrées ${fmt(d.in_m3, 3)} m³`}
                     />
