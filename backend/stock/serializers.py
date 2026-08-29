@@ -13,6 +13,7 @@ from .models import (
     DryingBatch,
     Inventory,
     Kiln,
+    Lead,
     MonthlyArchive,
     Payment,
     PriceTier,
@@ -829,3 +830,58 @@ class DeliveryNoteCreateSerializer(serializers.Serializer):
         if not Warehouse.objects.filter(pk=value, is_active=True).exists():
             raise serializers.ValidationError("Dépôt introuvable ou inactif.")
         return value
+
+
+# ---------------------------------------------------------------------------
+# Public vitrine — catalog for the unauthenticated website
+# ---------------------------------------------------------------------------
+class PublicProductSerializer(serializers.ModelSerializer):
+    """Fields exposed on the public boutique (no cost price / no margin).
+
+    ``sale_price`` is the price per m³ in MAD. ``stock_status`` drives the
+    "Rupture" badge shown to visitors.
+    """
+
+    wood_type_name = serializers.CharField(source="wood_type.name", read_only=True, default=None)
+    species_category = serializers.CharField(source="wood_type.category", read_only=True, default=None)
+    dimensions_display = serializers.CharField(read_only=True)
+    volume_cubic_m = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            "id", "sku", "name", "category", "wood_type_name", "species_category",
+            "length_mm", "width_mm", "thickness_mm", "grade", "finish",
+            "moisture_content", "volume_cubic_m", "dimensions_display",
+            "uom", "sale_price", "currency", "total_stock_qty", "stock_status",
+        ]
+
+    def get_volume_cubic_m(self, obj):
+        v = obj.volume_cubic_m
+        return None if v is None else float(v)
+
+
+class PublicCategorySerializer(serializers.Serializer):
+    """A product category with its active product count for the boutique menu."""
+    key = serializers.CharField()
+    label = serializers.CharField()
+    product_count = serializers.IntegerField()
+
+
+class PublicLeadItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField(required=False, allow_null=True)
+    sku = serializers.CharField(required=False, allow_blank=True, max_length=100)
+    name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    quantity = serializers.CharField(required=False, allow_blank=True, max_length=50)
+
+
+class PublicLeadSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=[c for c, _ in Lead.Kind.choices])
+    name = serializers.CharField(max_length=200)
+    company = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=200)
+    email = serializers.EmailField()
+    phone = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=60)
+    city = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=200)
+    subject = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
+    message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    requested_lines = PublicLeadItemSerializer(many=True, required=False)

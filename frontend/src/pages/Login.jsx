@@ -22,7 +22,7 @@ export default function Login() {
         password: password.trim(),
       });
       setToken(data.token);
-      navigate("/", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.non_field_errors?.[0] ||

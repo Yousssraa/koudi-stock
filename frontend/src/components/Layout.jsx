@@ -5,10 +5,10 @@ import api from "../api/client.js";
 import { clearToken } from "../auth.js";
 
 const NAV = [
-  { to: "/", label: "Tableau de bord", icon: "◧" },
-  { to: "/stock", label: "Stock", icon: "▦" },
-  { to: "/transport", label: "Transport & Logistique", icon: "🚚" },
-  { to: "/archive", label: "Archive", icon: "🗄" },
+  { to: "/app", label: "Tableau de bord", icon: "◧" },
+  { to: "/app/stock", label: "Stock", icon: "▦" },
+  { to: "/app/transport", label: "Transport & Logistique", icon: "🚚" },
+  { to: "/app/archive", label: "Archive", icon: "🗄" },
 ];
 
 function Logo() {
@@ -38,7 +38,7 @@ export default function Layout() {
       await api.post("/auth/logout/");
     } catch (_) {}
     clearToken();
-    navigate("/login");
+    navigate("/app/login");
   };
 
   return (
@@ -104,7 +104,7 @@ export default function Layout() {
             </div>
 
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/app/settings")}
               title="Paramètres société"
               className="flex h-10 w-10 items-center justify-center rounded-xl bg-panel text-lg text-ash shadow-lg shadow-black/20 ring-1 ring-line transition hover:bg-raise hover:text-amber"
             >

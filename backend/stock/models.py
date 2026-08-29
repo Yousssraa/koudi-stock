@@ -870,3 +870,40 @@ class DeliveryNoteItem(models.Model):
             self.product.length_mm,
             self.quantity,
         )
+
+
+# ---------------------------------------------------------------------------
+# Public vitrine — Devis / Contact lead captures
+# ---------------------------------------------------------------------------
+class Lead(models.Model):
+    """A request submitted through the public website (quote or contact).
+
+    Quote requests (``type="devis"``) are the natural entry point for new
+    business: the visitor fills their details plus the products/quantities they
+    are interested in. Contact messages (``type="contact"``) are general
+    enquiries. Both are stored so the team can follow up from the app.
+    """
+
+    class Kind(models.TextChoices):
+        DEVIS = "devis"        # Demande de devis
+        CONTACT = "contact"    # Message de contact
+
+    kind = models.TextField(choices=Kind.choices, default=Kind.DEVIS, db_index=True)
+    name = models.TextField()
+    company = models.TextField(blank=True, null=True)
+    email = models.TextField()
+    phone = models.TextField(blank=True, null=True)
+    city = models.TextField(blank=True, null=True)
+    subject = models.TextField(blank=True, null=True)
+    message = models.TextField(blank=True, null=True)
+    # Free-form "product | quantity" lines from the devis form (JSON).
+    requested_lines = models.JSONField(default=list, blank=True)
+    status = models.TextField(default="new", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "leads"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.kind} — {self.name} ({self.email})"

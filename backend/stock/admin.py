@@ -4,6 +4,7 @@ from .models import (
     Client,
     CompanyProfile,
     Inventory,
+    Lead,
     Product,
     PurchaseOrder,
     PurchaseOrderItem,
@@ -107,3 +108,9 @@ class SalesOrderAdmin(admin.ModelAdmin):
     list_display = ("so_number", "client", "warehouse", "status", "total_amount", "order_date")
     list_filter = ("status", "warehouse")
     inlines = [SalesOrderItemInline]
+
+
+@admin.register(Lead)
+class LeadAdmin(admin.ModelAdmin):
+    list_display = ("kind", "name", "company", "email", "phone", "status", "created_at")
+    list_filter = ("kind", "status")

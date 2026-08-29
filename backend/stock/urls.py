@@ -2,7 +2,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import views
+from . import views, views_public
 
 router = DefaultRouter()
 router.register(r"wood-types", views.WoodTypeViewSet, basename="wood-type")
@@ -37,4 +37,10 @@ urlpatterns = [
     path("archive/<int:year>/<int:month>/", views.ArchiveMonthProductsView.as_view(), name="archive-month-products"),
     path("archive/close/", views.ArchiveCloseView.as_view(), name="archive-close"),
     path("company/", views.CompanyProfileView.as_view(), name="company-profile"),
+    # Public vitrine (unauthenticated)
+    path("public/categories/", views_public.PublicCategoriesView.as_view(), name="public-categories"),
+    path("public/products/", views_public.PublicProductsView.as_view(), name="public-products"),
+    path("public/products/<int:pk>/", views_public.PublicProductDetailView.as_view(), name="public-product-detail"),
+    path("public/company/", views_public.PublicCompanyView.as_view(), name="public-company"),
+    path("public/leads/", views_public.PublicLeadView.as_view(), name="public-lead"),
 ]

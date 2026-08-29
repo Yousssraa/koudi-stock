@@ -22,7 +22,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && !error.config?.url?.startsWith("/auth/login")) {
       clearToken();
-      if (window.location.pathname !== "/login") window.location.href = "/login";
+      if (window.location.pathname !== "/app/login") window.location.href = "/app/login";
     }
     return Promise.reject(error);
   }
