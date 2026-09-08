@@ -127,7 +127,7 @@ export default function Accueil() {
             IMPORTATEUR &amp; DISTRIBUTEUR DE BOIS ET MATÉRIAUX DE CONSTRUCTION
           </h1>
           <span className="mt-6 inline-block rounded-full bg-white/90 px-5 py-2 text-lg font-semibold tracking-wide text-copper shadow-lg sm:text-xl">
-            Au Maroc depuis Casablanca · Bordeaux
+            Au Maroc depuis 1976
           </span>
         </div>
       </section>
