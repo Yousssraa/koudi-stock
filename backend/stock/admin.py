@@ -2,12 +2,19 @@ from django.contrib import admin
 
 from .models import (
     Client,
+    ClientNotification,
+    ClientUser,
     CompanyProfile,
+    CreditNote,
     Inventory,
     Lead,
+    Payment,
     Product,
     PurchaseOrder,
     PurchaseOrderItem,
+    Quote,
+    QuoteItem,
+    ReferencePrice,
     SalesOrder,
     SalesOrderItem,
     StockMovement,
@@ -37,6 +44,17 @@ class CompanyProfileAdmin(admin.ModelAdmin):
 class WoodTypeAdmin(admin.ModelAdmin):
     list_display = ("name", "scientific_name", "category", "density_kg_m3", "is_active")
     search_fields = ("name", "scientific_name")
+
+
+@admin.register(ReferencePrice)
+class ReferencePriceAdmin(admin.ModelAdmin):
+    list_display = (
+        "wood_type", "category", "piece_type", "treatment", "target",
+        "unit_price_mad", "is_active",
+    )
+    list_filter = ("category", "piece_type", "treatment", "target", "is_active")
+    search_fields = ("wood_type__name",)
+    autocomplete_fields = ("wood_type",)
 
 
 @admin.register(Warehouse)
@@ -84,6 +102,48 @@ class SupplierAdmin(admin.ModelAdmin):
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     list_display = ("code", "company_name", "phone", "email", "credit_limit", "is_active")
+    search_fields = ("code", "company_name", "email")
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ("id", "client", "amount", "payment_date", "method_label", "bank_name", "due_date", "sales_order")
+    list_filter = ("method_key", "payment_date", "due_date")
+    search_fields = ("client__code", "client__company_name", "reference", "bank_name")
+
+
+@admin.register(CreditNote)
+class CreditNoteAdmin(admin.ModelAdmin):
+    list_display = (
+        "credit_note_number", "client", "sales_order", "reason", "amount",
+        "applied_amount", "volume_m3", "created_date",
+    )
+    list_filter = ("reason", "created_date")
+    search_fields = ("credit_note_number", "client__code", "client__company_name")
+
+
+@admin.register(ClientUser)
+class ClientUserAdmin(admin.ModelAdmin):
+    list_display = ("user", "client", "is_primary")
+    autocomplete_fields = ("client", "user")
+
+
+class QuoteItemInline(admin.TabularInline):
+    model = QuoteItem
+    extra = 0
+
+
+@admin.register(Quote)
+class QuoteAdmin(admin.ModelAdmin):
+    list_display = ("quote_number", "client", "status", "total_amount", "created_at")
+    list_filter = ("status",)
+    inlines = [QuoteItemInline]
+
+
+@admin.register(ClientNotification)
+class ClientNotificationAdmin(admin.ModelAdmin):
+    list_display = ("client", "kind", "title", "is_read", "created_at")
+    list_filter = ("kind", "is_read")
 
 
 class PurchaseOrderItemInline(admin.TabularInline):

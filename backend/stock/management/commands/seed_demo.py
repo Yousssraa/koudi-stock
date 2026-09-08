@@ -19,9 +19,15 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 from django.test import Client as TestClient
+from django.utils import timezone
+
+from datetime import date, datetime
+
+from django.contrib.auth.models import User
 
 from stock.models import (
     Client,
+    ClientUser,
     Product,
     PurchaseOrder,
     SalesOrder,
@@ -135,6 +141,25 @@ class Command(BaseCommand):
             )
             client_ids[cn] = cl.id
 
+        # --- Espace Pro login (demo portal user for the first client) ---------
+        pro_user, _ = User.objects.get_or_create(username="menais")
+        pro_user.email = "menais@example.ma"
+        pro_user.set_password("demo2026")
+        pro_user.save()
+        ClientUser.objects.get_or_create(
+            user=pro_user,
+            defaults={"client_id": client_ids["Ateliers Menais"], "is_primary": True},
+        )
+
+        # The internal back-office `demo` account also gets portal access so a
+        # single password works everywhere in the demo environment.
+        demo_user = User.objects.filter(username="demo").first()
+        if demo_user:
+            ClientUser.objects.get_or_create(
+                user=demo_user,
+                defaults={"client_id": client_ids["Ateliers Menais"], "is_primary": False},
+            )
+
         # --- Suppliers --------------------------------------------------------
         suppliers = [
             ("Scierie Atlas du Rif", "scierie.atlas@example.ma", "0655-999000"),
@@ -217,10 +242,81 @@ class Command(BaseCommand):
             sr = tc.post("/api/sales/", payload, content_type="application/json")
             print("  sale:", sr.status_code, sr.json() if sr.status_code >= 400 else "OK")
 
+        # --- Loyalty demo: order + payment history for Ateliers Menais --------
+        # Four shipped orders (invoices) settled on time so the portal's
+        # "Fidélité" page shows a realistic scorecard (3/4 criteria : the seeded
+        # rejected quote QT20260819B leaves "aucun devis refusé" as the miss).
+        loyalty_sales = [
+            {
+                "warehouse": wh_tanger,
+                "items": [("Rondin Sapin 180", 15, 2700)],
+                "order_date": "2026-05-12", "pay_date": "2026-06-01",
+            },
+            {
+                "warehouse": wh_casa,
+                "items": [("Madrier Pin Sylvestre 63×225", 20, 3900)],
+                "order_date": "2026-06-15", "pay_date": "2026-07-05",
+            },
+            {
+                "warehouse": wh_casa,
+                "items": [
+                    ("Madrier Pin Sylvestre 63×225", 5, 3900),
+                    ("Basting Sapin 63×175", 12, 3500),
+                ],
+                "order_date": "2026-07-22", "pay_date": "2026-08-09",
+            },
+            {
+                "warehouse": wh_casa,
+                "items": [
+                    ("Madrier Pin Sylvestre 63×225", 1, 3900),
+                    ("Basting Sapin 63×175", 4, 3500),
+                ],
+                "order_date": "2026-08-25", "pay_date": "2026-09-01",
+            },
+        ]
+        for so_cfg in loyalty_sales:
+            payload = {
+                "client_id": client_ids["Ateliers Menais"],
+                "warehouse_id": so_cfg["warehouse"].id,
+                "items": [
+                    {"product_id": product_ids[name], "quantity": qty, "price_per_m3": price}
+                    for name, qty, price in so_cfg["items"]
+                ],
+            }
+            sr = tc.post("/api/sales/", payload, content_type="application/json")
+            if sr.status_code >= 400:
+                print("  loyalty sale:", sr.status_code, sr.json())
+                continue
+            so_data = sr.json()
+            order_date = date.fromisoformat(so_cfg["order_date"])
+            # Backdate the document timestamps (the API always stamps "now").
+            _stamp = timezone.make_aware(datetime.combine(order_date, datetime.min.time()))
+            SalesOrder.objects.filter(pk=so_data["id"]).update(
+                order_date=order_date, created_at=_stamp, updated_at=_stamp
+            )
+            pay_payload = {
+                "client_id": client_ids["Ateliers Menais"],
+                "sales_order_id": so_data["id"],
+                "amount": round(float(so_data["total_amount"]), 2),
+                "payment_date": so_cfg["pay_date"],
+                "method": "Virement",
+                "reference": "VIR-" + so_cfg["pay_date"].replace("-", ""),
+                "note": "Règlement fidélité (démo)",
+            }
+            pr = tc.post("/api/payments/", pay_payload, content_type="application/json")
+            print(
+                "  loyalty sale+pay:",
+                so_data["so_number"],
+                "→",
+                pr.status_code,
+                pr.json() if pr.status_code >= 400 else "OK",
+            )
+
         self.stdout.write(self.style.SUCCESS(
             "Done. Démo temporaire prête. "
             "Pour nettoyer avant vos vraies données :  python manage.py purge_demo"
         ))
+        self.stdout.write("Espace Pro (login) :  demo / demo2026  ou  menais / demo2026")
         self.stdout.write("Crée :")
         for m, label in [(WoodType, "essences"), (Product, "produits"), (Client, "clients"),
                          (Supplier, "fournisseurs"), (PurchaseOrder, "bons d'achat"),

@@ -21,4 +21,16 @@ dans ce dossier pour une démo hors-ligne). Sources : Wikimedia Commons.
 | `eucalyptus.jpg` | Gommier / Eucalyptus (madrier brut) | Evan Edwards | Public domain |
 | `plywood.jpg` | Contreplaqué bouleau (birch plywood) | Bystander | CC BY-SA 3.0 |
 
+## Photos produits — photos réelles par type de produit
+
+| Fichier | Produit / usage | Auteur | Licence |
+| --- | --- | --- | --- |
+| `bois-charpente.jpg` | Bois de charpente (chevron, bastaing, plateau, volige, liteau) | Bob Embleton (geograph.org.uk) | CC BY-SA 2.0 |
+| `bois-blanc.jpg` | Bois blanc / scierie (épicéa, sapin) | Dominicus Johannes Bergsma | CC BY-SA 4.0 |
+| `madrier-photo.jpg` | Madrier / poteau carré (bois empilé en scierie) | National Library NZ on The Commons | No restrictions |
+| `contreplaque.jpg` | Contreplaqué / plywood (panneaux empilés) | Downtowngal | CC BY-SA 4.0 |
+| `osb-photo.jpg` | Panneau OSB 3 | C. Sander | CC BY-SA 3.0 |
+| `mdf-photo.jpg` | Panneau MDF (et stratifié / high gloss) | Elke Wetzig (elya) | CC BY-SA 3.0 |
+| `particule.jpg` | Panneau de particules (latté, sorel) | MatthiasKabel | CC BY-SA 3.0 |
+
 Liens : https://commons.wikimedia.org

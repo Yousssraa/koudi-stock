@@ -175,28 +175,28 @@ export default function Categorie() {
                   className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
                 >
                   <Link to={`/produit/${p.id}`} className="block">
-                    <div className="relative h-32 overflow-hidden sm:h-36">
+                    <div className="relative h-24 overflow-hidden sm:h-28">
                       <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                       {p.stock_status === "out_of_stock" && (
                         <span className="absolute left-2 top-2 rounded-full bg-rose px-2 py-0.5 text-[10px] font-semibold text-ink">{t.common.outOfStock}</span>
                       )}
                     </div>
-                    <div className="space-y-0.5 p-2.5 sm:p-3">
-                      <h3 className="font-display truncate text-sm font-bold text-frost group-hover:text-amber">
+                    <div className="space-y-0.5 p-2 sm:p-2.5">
+                      <h3 className="font-display truncate text-xs font-bold text-frost group-hover:text-amber">
                         {p.name}
                         {String(p.id) === focusId && <span className="ml-1.5 text-xs text-amber">●</span>}
                       </h3>
-                      <p className="truncate text-xs text-dim">{p.wood_type_name || p.category}</p>
-                      {p.piece_type && <p className="mt-1 truncate text-[11px] text-ash">{p.piece_type}{p.treatment ? ` · ${p.treatment}` : ""}</p>}
-                      <p className="mt-1.5 font-semibold text-amber">
+                      <p className="truncate text-[11px] text-dim">{p.wood_type_name || p.category}</p>
+                      {p.piece_type && <p className="mt-0.5 truncate text-[10px] text-ash">{p.piece_type}{p.treatment ? ` · ${p.treatment}` : ""}</p>}
+                      <p className="mt-1 text-xs font-semibold text-amber">
                         {fmtPrice(p.sale_price)} {t.common.mad} <span className="font-normal text-dim">/ {t.common.perM3}</span>
                       </p>
                     </div>
                   </Link>
-                  <div className="px-2.5 pb-3 sm:px-3">
+                  <div className="px-2 pb-2.5 sm:px-2.5">
                     <Link
                       to={`/produit/${p.id}`}
-                      className="flex items-center justify-center rounded-lg bg-gradient-to-r from-amber to-copper px-3 py-2 text-xs font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+                      className="flex items-center justify-center rounded-lg bg-gradient-to-r from-amber to-copper px-2.5 py-1.5 text-[11px] font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
                     >
                       Découvrir →
                     </Link>

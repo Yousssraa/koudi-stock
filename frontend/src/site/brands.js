@@ -1,0 +1,36 @@
+// Marques partenaires de KOUDI WOOD — bandeau « Les marques les plus réputées »
+// inspiré du site Comarbois. Les noms sont affichés sous forme de logos/textes.
+const BRANDS = [
+  "ALFA WOOD",
+  "EGGER",
+  "FINSA",
+  "KRONOSPAN",
+  "SVEZA",
+  "ILIM TIMBER",
+  "CASTELLARI",
+  "SONAE ARAUCO",
+  "GREENLAM",
+  "POLYREY",
+  "VALCHROMAT",
+  "ALVIC",
+  "MEYER",
+  "KNAUF",
+  "ROCKWOOL",
+  "ARCELOR MITTAL",
+  "MAGHREB STEEL",
+  "EURO LAMELLE",
+  "RAINER TIMBER",
+  "SODRA",
+  "HOLMEN",
+  "SCA",
+  "METSAWOOD",
+  "LOWE",
+  "IHC",
+  "PUUKKILA",
+  "EXPORTDRVO",
+  "MARTINSONS",
+  "SETRA",
+  "IPIRANGA",
+];
+
+export default BRANDS;

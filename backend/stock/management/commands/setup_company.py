@@ -1,8 +1,9 @@
-"""Configure the company identity (KOUDI WOOD) printed on documents.
+"""Configure the company identity (KOUDI STOCK SARL) printed on documents.
 
-Sets the CompanyProfile singleton with the public KOUDI WOOD details
-(Casablanca). Fields for which no public value exists (IF, patente, CNSS,
-bank, RIB) are left empty and are simply omitted from invoices/quotations/POs.
+Sets the CompanyProfile singleton with the KOUDI STOCK SARL details
+(Casablanca): ICE, Registre de commerce, Identifiant fiscal and Patente are
+filled from the official legal identifiers so invoices/quotations/POs render a
+complete Moroccan legal footer.
 
 Run:  python manage.py setup_company
 """
@@ -12,18 +13,21 @@ from stock.models import CompanyProfile
 
 
 class Command(BaseCommand):
-    help = "Set the CompanyProfile (KOUDI WOOD) used on printed documents."
+    help = "Set the CompanyProfile (KOUDI STOCK SARL) used on printed documents."
 
     def handle(self, *args, **options):
         p = CompanyProfile.current()
-        p.name = "KOUDI WOOD"
-        p.tagline = "Vente de bois massifs & panneaux — Découpe sur mesure"
-        p.address = "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca 20400"
+        p.name = "KOUDI STOCK SARL"
+        p.tagline = "Négoce & Importation de Bois"
+        p.address = "Zone Industrielle Lissasba, Rue des Bois, Casablanca"
         p.phone = "0677-580205"
-        p.registre_commerce = "461133"
-        p.ice = "002504881000008"
+        p.email = "contact@koudistock.ma"
+        p.ice = "003124567000012"
+        p.registre_commerce = "489201 Casablanca"
+        p.identifiant_fiscal = "52891034"
+        p.patente = "34109823"
         p.save()
         self.stdout.write(self.style.SUCCESS(
-            "Profil société défini : KOUDI WOOD (Casablanca). "
+            "Profil société défini : KOUDI STOCK SARL (Casablanca). "
             "Éditez-le via l'écran Paramètres ou /admin/ si ces données changent."
         ))

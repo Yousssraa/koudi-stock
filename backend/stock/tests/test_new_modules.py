@@ -615,3 +615,107 @@ class DeliveryNoteTests(BaseModulesTest):
         r2 = self.api.get("/api/delivery-notes/", {"year": year, "month": (month % 12) + 1})
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(r2.data["count"], 0)
+
+
+class FacturationTests(BaseModulesTest):
+    """Grouped invoicing: BL consolidation, avoirs, formal payments, badges."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.admin = User.objects.create(username="admin-facturation", password="x", is_staff=True)
+        cls.admin_token = Token.objects.create(user=cls.admin)
+
+    def setUp(self):
+        self.api = APIClient()
+        self.api.credentials(HTTP_AUTHORIZATION=f"Token {self.admin_token.key}")
+
+    def test_grouped_invoice_with_avoir_and_cheque(self):
+        client = self.make_client("CLI-FACT-1", credit_limit="500000")
+        product = self.make_product("SKU-FACT-1", "Planche à facturer", dims=PANEL, cost="3500", sale="4200")
+        self.buy(product, 600, price="3500")
+
+        bls = []
+        for qty in ("100", "60"):
+            bl = services.create_delivery_note(client, self.wh, [{"product": product, "quantity": qty}])
+            services.advance_delivery_note(bl, DeliveryNote.Status.IN_TRANSIT)
+            services.advance_delivery_note(bl, DeliveryNote.Status.DELIVERED)
+            bls.append(bl)
+
+        so = services.create_grouped_invoice(
+            client, self.wh, [b.pk for b in bls], so_number="FC-TEST-1"
+        )
+        self.assertEqual(so.status, SalesOrder.Status.SHIPPED)
+        self.assertEqual(
+            Decimal(str(so.total_amount)),
+            (bls[0].total_amount + bls[1].total_amount).quantize(Decimal("0.0001")),
+        )
+        bls[0].refresh_from_db()
+        bls[1].refresh_from_db()
+        self.assertEqual(bls[0].status, DeliveryNote.Status.INVOICED)
+        self.assertEqual(bls[0].invoice_id, so.pk)
+
+        cn = services.create_credit_note(
+            client, sales_order=so, reason="commercial", amount=Decimal("50"),
+            notes="Avoir test.", credit_note_number="AV-TEST-1",
+        )
+        self.assertEqual(cn.applied_amount, Decimal("50"))
+        self.assertEqual(so.balance_due, so.total_amount - Decimal("50"))
+
+        services.create_payment(
+            client, so.balance_due, sales_order=so,
+            method_key="cheque", bank_name="Attijariwafa bank", reference="CHQ 0000001",
+            due_date=timezone.localdate() + timedelta(days=45),
+        )
+        self.assertEqual(services.invoice_payment_status(so, client)["key"], "awaited")
+
+        from stock.pdfs import build_credit_note_pdf, build_invoice_pdf
+
+        self.assertTrue(build_invoice_pdf(so).startswith(b"%PDF"))
+        self.assertTrue(build_credit_note_pdf(cn).startswith(b"%PDF"))
+
+    def test_register_endpoint_includes_badges_and_summary(self):
+        from stock.pdfs import build_invoice_pdf
+
+        client = self.make_client("CLI-FACT-2", credit_limit="500000")
+        product = self.make_product("SKU-FACT-2", "Planche registre", dims=PANEL, cost="3500", sale="4200")
+        self.buy(product, 600, price="3500")
+        bl = services.create_delivery_note(client, self.wh, [{"product": product, "quantity": "50"}])
+        services.advance_delivery_note(bl, DeliveryNote.Status.IN_TRANSIT)
+        services.advance_delivery_note(bl, DeliveryNote.Status.DELIVERED)
+        so = services.create_grouped_invoice(client, self.wh, [bl.pk], so_number="FC-TEST-2")
+
+        r = self.api.get("/api/invoices/")
+        self.assertEqual(r.status_code, 200, r.data)
+        row = next(x for x in r.data["results"] if x["so_number"] == "FC-TEST-2")
+        self.assertEqual(row["payment_status"], "pending")
+        self.assertEqual(row["balance_due"], float(so.total_amount))
+        self.assertEqual(row["delivery_notes"], [{"bl_number": bl.bl_number, "status": "invoiced"}])
+        self.assertTrue(build_invoice_pdf(so).startswith(b"%PDF"))
+
+    def test_credit_note_pdf_reflects_reference(self):
+        client = self.make_client("CLI-FACT-3", credit_limit="500000")
+        product = self.make_product("SKU-FACT-3", "Planche avoir", dims=PANEL, cost="3500", sale="4200")
+        self.buy(product, 600, price="3500")
+        bl = services.create_delivery_note(client, self.wh, [{"product": product, "quantity": "40"}])
+        services.advance_delivery_note(bl, DeliveryNote.Status.IN_TRANSIT)
+        services.advance_delivery_note(bl, DeliveryNote.Status.DELIVERED)
+        so = services.create_grouped_invoice(client, self.wh, [bl.pk], so_number="FC-TEST-3")
+        cn = services.create_credit_note(
+            client, sales_order=so, reason="return", amount=Decimal("10"),
+            credit_note_number="AV-TEST-3",
+        )
+        from stock.pdfs import build_credit_note_pdf
+
+        self.assertTrue(build_credit_note_pdf(cn).startswith(b"%PDF"))
+        self.assertEqual(cn.reason_label, "Retour de marchandise")
+
+    def test_amount_in_french_words(self):
+        from stock.pdfs import amount_in_words
+
+        self.assertEqual(amount_in_words(Decimal("12.50")), "douze dirhams et cinquante centimes")
+        self.assertEqual(amount_in_words(Decimal("200")), "deux cents dirhams")
+        self.assertEqual(amount_in_words(Decimal("81")), "quatre-vingt-un dirhams")
+        self.assertEqual(amount_in_words(Decimal("1234.00")), "mille deux cent trente-quatre dirhams")
+        self.assertEqual(amount_in_words(Decimal("12345.67")),
+                         "douze mille trois cent quarante-cinq dirhams et soixante-sept centimes")

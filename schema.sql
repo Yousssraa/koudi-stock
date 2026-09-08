@@ -213,6 +213,66 @@ CREATE TABLE IF NOT EXISTS sales_order_items (
 );
 
 -- ----------------------------------------------------------------------------
+-- 4b. ESPACE PRO (client portal)
+-- ----------------------------------------------------------------------------
+
+-- Quotes requested by professional clients through the portal.
+-- created_by_id points at Django's auth_user table (no FK here to keep this
+-- script standalone, same rationale as audit_logs).
+CREATE TABLE IF NOT EXISTS quotes (
+    id             BIGSERIAL PRIMARY KEY,
+    quote_number   TEXT NOT NULL UNIQUE,
+    client_id      BIGINT NOT NULL REFERENCES clients(id),
+    created_by_id  BIGINT,
+    status         TEXT NOT NULL DEFAULT 'draft',
+    subtotal       NUMERIC(14,4) NOT NULL DEFAULT 0,
+    tax_amount     NUMERIC(14,4) NOT NULL DEFAULT 0,
+    total_amount   NUMERIC(14,4) NOT NULL DEFAULT 0,
+    currency       TEXT NOT NULL DEFAULT 'MAD',
+    notes          TEXT,
+    valid_until    DATE,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT quotes_status_check CHECK (status IN (
+        'draft','sent','accepted','rejected','expired'))
+);
+
+CREATE TABLE IF NOT EXISTS quote_items (
+    id          BIGSERIAL PRIMARY KEY,
+    quote_id    BIGINT NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+    product_id  BIGINT NOT NULL REFERENCES products(id),
+    quantity    NUMERIC(14,4) NOT NULL,
+    unit_price  NUMERIC(14,4) NOT NULL DEFAULT 0,
+    line_total  NUMERIC(14,4) NOT NULL DEFAULT 0,
+    notes       TEXT,
+    CONSTRAINT quote_items_qty_check CHECK (quantity > 0)
+);
+
+-- Portal account linking a Django auth user to a client company.
+CREATE TABLE IF NOT EXISTS client_users (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL UNIQUE,   -- Django auth_user
+    client_id   BIGINT NOT NULL REFERENCES clients(id),
+    is_primary  BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS client_notifications (
+    id          BIGSERIAL PRIMARY KEY,
+    client_id   BIGINT NOT NULL REFERENCES clients(id),
+    user_id     BIGINT,                    -- Django auth_user
+    kind        TEXT NOT NULL DEFAULT 'general',
+    title       TEXT NOT NULL,
+    message     TEXT,
+    is_read     BOOLEAN NOT NULL DEFAULT FALSE,
+    link        TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT client_notifications_kind_check CHECK (kind IN (
+        'quote_update','order_update','delivery_update',
+        'payment_received','credit_alert','general'))
+);
+
+-- ----------------------------------------------------------------------------
 -- 5. TRIGGERS
 -- ----------------------------------------------------------------------------
 
@@ -466,6 +526,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS trg_quotes_updated ON quotes;
+CREATE TRIGGER trg_quotes_updated
+    BEFORE UPDATE ON quotes
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 DROP TRIGGER IF EXISTS trg_payments_updated ON payments;
 CREATE TRIGGER trg_payments_updated
     BEFORE UPDATE ON payments
@@ -501,6 +566,14 @@ CREATE INDEX IF NOT EXISTS idx_drying_status         ON drying_batches(status);
 CREATE INDEX IF NOT EXISTS idx_archive_year_month    ON monthly_archive(year, month);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created    ON audit_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action     ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_quotes_client         ON quotes(client_id);
+CREATE INDEX IF NOT EXISTS idx_quotes_status         ON quotes(status);
+CREATE INDEX IF NOT EXISTS idx_quote_items_quote     ON quote_items(quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_items_product   ON quote_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_client_users_client   ON client_users(client_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_client  ON client_notifications(client_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read    ON client_notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_kind    ON client_notifications(kind);
 
 -- ----------------------------------------------------------------------------
 -- 11. ROW LEVEL SECURITY NOTES (uncomment when building the API)

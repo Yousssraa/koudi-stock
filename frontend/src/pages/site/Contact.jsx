@@ -120,6 +120,38 @@ export default function Contact() {
           )}
         </div>
       </div>
+
+      {/* Map */}
+      <div className="mt-12">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber">Localisation</p>
+            <h2 className="font-display text-2xl font-extrabold text-frost">Nous trouver</h2>
+          </div>
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+              company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl bg-gradient-to-r from-amber to-copper px-5 py-2.5 text-sm font-bold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+          >
+            Itinéraire →
+          </a>
+        </div>
+        <div className="overflow-hidden rounded-3xl shadow-xl shadow-black/10 ring-1 ring-line">
+          <iframe
+            title="Localisation KOUDI WOOD"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(
+              company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
+            )}&output=embed`}
+            className="h-[420px] w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
+      </div>
     </div>
   );
 }

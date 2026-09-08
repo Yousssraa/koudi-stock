@@ -7,7 +7,10 @@ from . import services
 from .models import (
     AuditLog,
     Client,
+    ClientNotification,
+    ClientUser,
     CompanyProfile,
+    CreditNote,
     DeliveryNote,
     DeliveryNoteItem,
     DryingBatch,
@@ -20,6 +23,9 @@ from .models import (
     Product,
     PurchaseOrder,
     PurchaseOrderItem,
+    Quote,
+    QuoteItem,
+    ReferencePrice,
     SalesOrder,
     SalesOrderItem,
     StockMovement,
@@ -31,12 +37,54 @@ from .models import (
 
 
 class WoodTypeSerializer(serializers.ModelSerializer):
+    common_names_list = serializers.SerializerMethodField()
+
     class Meta:
         model = WoodType
         fields = [
-            "id", "name", "scientific_name", "category", "density_kg_m3",
+            "id", "name", "scientific_name", "common_names", "common_names_list",
+            "category", "comarbois_family", "density_kg_m3",
+            "provenances", "durability_class", "moisture_note",
             "description", "is_active",
         ]
+
+    def get_common_names_list(self, obj):
+        return obj.common_names_list
+
+
+class ReferencePriceSerializer(serializers.ModelSerializer):
+    wood_type = serializers.CharField(
+        source="wood_type.name", read_only=True, default=None
+    )
+    wood_type_id = serializers.PrimaryKeyRelatedField(
+        source="wood_type", queryset=WoodType.objects.all(),
+        required=False, allow_null=True,
+    )
+
+    class Meta:
+        model = ReferencePrice
+        fields = [
+            "id", "wood_type", "wood_type_id", "category", "piece_type",
+            "treatment", "target", "unit_price_mad", "is_active",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
+
+
+class CatalogConfigSerializer(serializers.Serializer):
+    """Back-office reference lists: product categories, piece types,
+    treatments, grades, finishes and units-of-measure.
+
+    Serialized from the model ``TextChoices`` so the React admin can render
+    dynamic select dropdowns without duplicating enums in the frontend.
+    """
+
+    categories = serializers.ListField()
+    piece_types = serializers.ListField()
+    treatments = serializers.ListField()
+    grades = serializers.ListField()
+    finishes = serializers.ListField()
+    uoms = serializers.ListField()
 
 
 class WarehouseSerializer(serializers.ModelSerializer):
@@ -404,6 +452,127 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         return round(float((obj.total_amount - self._landed_subtotal(obj)) / subtotal * 100), 1)
 
 
+class PaymentStatusMixin:
+    """Shared invoice settlement fields (badges + BL/avoir context)."""
+
+    payment_status = serializers.SerializerMethodField()
+    payment_status_label = serializers.SerializerMethodField()
+    delivery_notes = serializers.SerializerMethodField()
+    applied_avoir = serializers.SerializerMethodField()
+    avoirs = serializers.SerializerMethodField()
+
+    def get_payment_status(self, obj):
+        return services.invoice_payment_status(obj, obj.client)["key"]
+
+    def get_payment_status_label(self, obj):
+        return services.invoice_payment_status(obj, obj.client)["label"]
+
+    def get_delivery_notes(self, obj):
+        return [
+            {"bl_number": d.bl_number, "status": d.status}
+            for d in obj.delivery_notes.all()
+        ]
+
+    def get_applied_avoir(self, obj):
+        return float(obj.applied_avoir)
+
+    def get_avoirs(self, obj):
+        return [
+            {
+                "id": cn.pk,
+                "credit_note_number": cn.credit_note_number,
+                "reason": cn.reason,
+                "reason_label": cn.reason_label,
+                "amount": float(cn.amount),
+                "applied_amount": float(cn.applied_amount),
+                "created_date": cn.created_date.isoformat() if cn.created_date else None,
+            }
+            for cn in obj.credit_notes.all()
+        ]
+
+
+class InvoiceRegisterItemSerializer(serializers.ModelSerializer):
+    """Light item lines for the invoice register: no per-item landed/margin
+    cost lookups (those scan every purchase order line and are far too heavy
+    for a list endpoint)."""
+
+    product = serializers.CharField(source="product.name", read_only=True)
+    product_id = serializers.IntegerField(read_only=True)
+    volume_m3 = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SalesOrderItem
+        fields = [
+            "id", "product", "product_id", "quantity_ordered",
+            "quantity_shipped", "unit_price", "line_total", "volume_m3",
+        ]
+
+    def get_volume_m3(self, obj):
+        v = compute_volume_m3(
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity_ordered
+        )
+        return None if v is None else float(v)
+
+
+class InvoiceSerializer(PaymentStatusMixin, SalesOrderSerializer):
+    """Full invoice register row: totals + settlement badge + attached BLs
+    and any Factures d'Avoir already deducted from the balance."""
+
+    items = InvoiceRegisterItemSerializer(many=True, read_only=True)
+    payment_status = serializers.SerializerMethodField()
+    payment_status_label = serializers.SerializerMethodField()
+    delivery_notes = serializers.SerializerMethodField()
+    applied_avoir = serializers.SerializerMethodField()
+    avoirs = serializers.SerializerMethodField()
+
+    class Meta(SalesOrderSerializer.Meta):
+        fields = [
+            "id", "so_number", "client", "client_id", "warehouse",
+            "order_date", "delivery_date", "status", "subtotal",
+            "discount_percent", "discount_amount", "tier_name",
+            "total_amount", "currency", "notes", "created_at", "items",
+            "paid_amount", "balance_due", "due_date",
+            "payment_status", "payment_status_label",
+            "delivery_notes", "applied_avoir", "avoirs",
+        ]
+
+
+class CreditNoteSerializer(serializers.ModelSerializer):
+    client = serializers.CharField(source="client.company_name", read_only=True)
+    client_id = serializers.PrimaryKeyRelatedField(
+        source="client", queryset=Client.objects.all(), write_only=True, required=False
+    )
+    sales_order_ref = serializers.CharField(
+        source="sales_order.so_number", read_only=True, default=None
+    )
+    sales_order_id = serializers.PrimaryKeyRelatedField(
+        source="sales_order", queryset=SalesOrder.objects.all(),
+        required=False, allow_null=True, write_only=True,
+    )
+    delivery_note_ref = serializers.CharField(
+        source="delivery_note.bl_number", read_only=True, default=None
+    )
+    reason_label = serializers.CharField(read_only=True)
+    amount_ttc = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CreditNote
+        fields = [
+            "id", "credit_note_number", "client", "client_id",
+            "sales_order", "sales_order_id", "sales_order_ref",
+            "delivery_note", "delivery_note_ref",
+            "reason", "reason_label", "volume_m3", "amount", "applied_amount",
+            "amount_ttc", "notes", "created_by", "created_date", "created_at",
+        ]
+        read_only_fields = [
+            "credit_note_number", "sales_order", "delivery_note",
+            "created_by", "created_date", "created_at", "applied_amount",
+        ]
+
+    def get_amount_ttc(self, obj):
+        return float(obj.amount_ttc)
+
+
 class TransactionItemSerializer(serializers.Serializer):
     """Line item for the quick sale / purchase endpoints (timber pricing)."""
 
@@ -592,13 +761,15 @@ class PaymentSerializer(serializers.ModelSerializer):
     sales_order_ref = serializers.CharField(
         source="sales_order.so_number", read_only=True, default=None
     )
+    method_label = serializers.CharField(read_only=True)
     payment_date = serializers.DateField(format="%Y-%m-%d")
 
     class Meta:
         model = Payment
         fields = [
             "id", "client", "client_id", "sales_order", "sales_order_ref",
-            "amount", "payment_date", "method", "reference", "note", "created_at",
+            "amount", "payment_date", "method", "method_key", "method_label",
+            "bank_name", "reference", "due_date", "note", "created_at",
         ]
 
 
@@ -607,8 +778,13 @@ class PaymentCreateSerializer(serializers.Serializer):
     sales_order_id = serializers.IntegerField(required=False, allow_null=True)
     amount = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal("0.01"))
     payment_date = serializers.DateField(required=False)
+    method_key = serializers.ChoiceField(
+        choices=Payment.Method.choices, required=False, default=Payment.Method.AUTRE
+    )
     method = serializers.CharField(required=False, allow_blank=True)
+    bank_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     reference = serializers.CharField(required=False, allow_blank=True)
+    due_date = serializers.DateField(required=False, allow_null=True)
     note = serializers.CharField(required=False, allow_blank=True)
 
     def validate_client_id(self, value):
@@ -799,6 +975,10 @@ class DeliveryNoteSerializer(serializers.ModelSerializer):
             DeliveryNote.Status.PREPARATION: "En préparation",
             DeliveryNote.Status.IN_TRANSIT: "En cours",
             DeliveryNote.Status.DELIVERED: "Livré",
+            DeliveryNote.Status.WAITING: "En attente",
+            DeliveryNote.Status.VALIDATED: "Validé & Chargé",
+            DeliveryNote.Status.INVOICED: "Facturé",
+            DeliveryNote.Status.CANCELLED: "Annulé",
         }.get(obj.status)
 
     def get_total_volume_m3(self, obj):
@@ -861,7 +1041,7 @@ class PublicProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            "id", "sku", "name", "colis_number", "category", "piece_type", "treatment",
+            "id", "sku", "name", "description", "colis_number", "category", "piece_type", "treatment",
             "wood_type_name", "species_category",
             "length_m", "width_mm", "thickness_mm", "grade", "finish",
             "moisture_content", "volume_cubic_m", "dimensions_display",
@@ -887,6 +1067,36 @@ class PublicCategorySerializer(serializers.Serializer):
     product_count = serializers.IntegerField()
 
 
+class PublicWoodTypeSerializer(serializers.ModelSerializer):
+    """Public-readable essence data sheet (no commercial/internal fields).
+
+    Mirrors the fields of the "fiche essence" shown on the boutique: names,
+    provenance, moisture behaviour, durability class (NF EN 350) and the
+    Comarbois umbrella family.
+    """
+
+    common_names_list = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WoodType
+        fields = [
+            "id", "name", "scientific_name", "common_names", "common_names_list",
+            "category", "comarbois_family", "density_kg_m3",
+            "provenances", "durability_class", "moisture_note", "description",
+        ]
+
+    def get_common_names_list(self, obj):
+        return obj.common_names_list
+
+
+class PublicWoodTypeLightSerializer(serializers.ModelSerializer):
+    """Compact essence bouquet ({name, comarbois_family, category}) for menus."""
+
+    class Meta:
+        model = WoodType
+        fields = ["id", "name", "comarbois_family", "category"]
+
+
 class PublicLeadItemSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(required=False, allow_null=True)
     sku = serializers.CharField(required=False, allow_blank=True, max_length=100)
@@ -904,3 +1114,188 @@ class PublicLeadSerializer(serializers.Serializer):
     subject = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
     message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     requested_lines = PublicLeadItemSerializer(many=True, required=False)
+
+
+# ---------------------------------------------------------------------------
+# Espace Pro — client portal serializers
+# ---------------------------------------------------------------------------
+class ClientProfileSerializer(serializers.ModelSerializer):
+    """Client profile exposed to the portal user (scoped to their own company)."""
+
+    class Meta:
+        model = Client
+        fields = [
+            "id", "code", "company_name", "contact_name", "email", "phone",
+            "address", "tax_id", "payment_terms", "payment_terms_days",
+        ]
+
+
+class ClientUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.CharField(source="user.email", read_only=True)
+
+    class Meta:
+        model = ClientUser
+        fields = ["id", "user", "client", "is_primary", "username", "email"]
+        read_only_fields = ["user", "client"]
+
+
+class QuoteItemSerializer(serializers.ModelSerializer):
+    product = serializers.CharField(source="product.name", read_only=True)
+    sku = serializers.CharField(source="product.sku", read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        source="product", queryset=Product.objects.all(), write_only=True
+    )
+    volume_m3 = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuoteItem
+        fields = [
+            "id", "product", "product_id", "sku", "quantity",
+            "unit_price", "line_total", "volume_m3", "notes",
+        ]
+
+    def get_volume_m3(self, obj):
+        v = compute_volume_m3(
+            obj.product.thickness_mm, obj.product.width_mm, obj.product.length_m, obj.quantity
+        )
+        return None if v is None else float(v)
+
+
+class QuoteSerializer(serializers.ModelSerializer):
+    items = QuoteItemSerializer(many=True, read_only=True)
+    status_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quote
+        fields = [
+            "id", "quote_number", "client", "status", "status_label",
+            "subtotal", "tax_amount", "total_amount", "currency",
+            "notes", "delivery_address", "valid_until", "created_at", "updated_at", "items",
+        ]
+
+    def get_status_label(self, obj):
+        return {
+            Quote.Status.DRAFT: "Brouillon",
+            Quote.Status.SENT: "Envoyé",
+            Quote.Status.ACCEPTED: "Accepté",
+            Quote.Status.REJECTED: "Refusé",
+            Quote.Status.EXPIRED: "Expiré",
+        }.get(obj.status)
+
+
+class QuoteItemWriteSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.DecimalField(max_digits=14, decimal_places=4, min_value=Decimal("0.0001"))
+    unit_price = serializers.DecimalField(
+        max_digits=14, decimal_places=4, required=False, min_value=Decimal("0")
+    )
+    notes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    def validate_product_id(self, value):
+        if not Product.objects.filter(pk=value, is_active=True).exists():
+            raise serializers.ValidationError("Produit introuvable ou inactif.")
+        return value
+
+
+class QuoteCreateSerializer(serializers.Serializer):
+    notes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    valid_until = serializers.DateField(required=False, allow_null=True)
+    items = QuoteItemWriteSerializer(many=True, min_length=1)
+
+
+class AdminQuoteSerializer(QuoteSerializer):
+    """Quote view for the back-office: adds client context + line count."""
+
+    client_name = serializers.CharField(source="client.company_name", read_only=True)
+    client_code = serializers.CharField(source="client.code", read_only=True)
+    item_count = serializers.SerializerMethodField()
+
+    class Meta(QuoteSerializer.Meta):
+        fields = QuoteSerializer.Meta.fields + ["client_name", "client_code", "item_count"]
+
+    def get_item_count(self, obj):
+        return obj.items.count()
+
+
+class ClientNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientNotification
+        fields = [
+            "id", "kind", "title", "message", "is_read", "link", "created_at",
+        ]
+
+
+class ProProductSerializer(serializers.ModelSerializer):
+    """Product preview for the pro catalog (prices shown but no internal cost)."""
+
+    wood_type_name = serializers.CharField(source="wood_type.name", read_only=True, default=None)
+    dimensions_display = serializers.CharField(read_only=True)
+    stock_status = serializers.CharField(read_only=True)
+    volume_cubic_m = serializers.SerializerMethodField()
+    total_stock_qty = serializers.DecimalField(max_digits=14, decimal_places=4, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            "id", "sku", "name", "category", "piece_type", "treatment",
+            "wood_type_name", "length_m", "width_mm", "thickness_mm",
+            "grade", "finish", "moisture_content", "volume_cubic_m",
+            "dimensions_display", "uom", "sale_price", "currency",
+            "total_stock_qty", "stock_status",
+        ]
+
+    def get_volume_cubic_m(self, obj):
+        v = obj.volume_cubic_m
+        return None if v is None else float(v)
+
+
+class ProSalesOrderSerializer(PaymentStatusMixin, SalesOrderSerializer):
+    items = SalesOrderItemSerializer(many=True, read_only=True)
+    status_label = serializers.SerializerMethodField()
+    balance_due = serializers.SerializerMethodField()
+    paid_amount = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+    payment_status_label = serializers.SerializerMethodField()
+    delivery_notes = serializers.SerializerMethodField()
+    applied_avoir = serializers.SerializerMethodField()
+    avoirs = serializers.SerializerMethodField()
+
+    class Meta(SalesOrderSerializer.Meta):
+        fields = [
+            "id", "so_number", "order_date", "delivery_date", "status", "status_label",
+            "subtotal", "tax_amount", "discount_percent", "discount_amount",
+            "total_amount", "currency", "items", "paid_amount", "balance_due",
+            "due_date", "payment_status", "payment_status_label",
+            "delivery_notes", "applied_avoir", "avoirs",
+        ]
+
+    def get_status_label(self, obj):
+        return {
+            SalesOrder.Status.DRAFT: "Brouillon",
+            SalesOrder.Status.CONFIRMED: "Confirmée",
+            SalesOrder.Status.PARTIALLY_SHIPPED: "Partiellement expédiée",
+            SalesOrder.Status.SHIPPED: "Expédiée",
+            SalesOrder.Status.DELIVERED: "Livrée",
+            SalesOrder.Status.CANCELLED: "Annulée",
+        }.get(obj.status)
+
+    def get_paid_amount(self, obj):
+        return float(obj.paid_amount)
+
+    def get_balance_due(self, obj):
+        return float(obj.balance_due)
+
+
+class ProPaymentSerializer(serializers.ModelSerializer):
+    sales_order_ref = serializers.CharField(
+        source="sales_order.so_number", read_only=True, default=None
+    )
+    method_label = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = [
+            "id", "amount", "payment_date", "method", "method_key", "method_label",
+            "bank_name", "reference", "due_date", "note", "sales_order_ref", "created_at",
+        ]

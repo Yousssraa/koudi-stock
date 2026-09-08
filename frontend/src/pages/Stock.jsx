@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../api/client.js";
 import { useApp } from "../context/AppContext.jsx";
 import { useToast } from "../components/ToastContext.jsx";
@@ -132,7 +132,15 @@ export default function Stock() {
                 <tr key={p.id} className="border-b border-line/50 transition hover:bg-raise/40">
                   <td className="px-4 py-3 font-mono text-xs text-ash">{p.sku}</td>
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-frost">{p.name}</div>
+                    <div className="font-semibold text-frost">
+                      <Link
+                        to={`/produit/${p.id}`}
+                        className="transition hover:text-amber"
+                        title={`Voir la fiche « ${p.name} » sur le site`}
+                      >
+                        {p.name}
+                      </Link>
+                    </div>
                     <div className="text-[11px] text-dim">
                       {[p.wood_type?.name, p.piece_type, p.treatment].filter(Boolean).join(" · ") || p.category || "—"}
                     </div>

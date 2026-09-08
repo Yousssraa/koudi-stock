@@ -5,7 +5,7 @@ const ACCENTS = {
   sky: { bar: "from-skyx to-skyx/50", icon: "bg-skyx/15 text-skyx ring-skyx/30" },
 };
 
-export default function MetricCard({ title, value, sub, icon = "▤", accent = "amber" }) {
+export default function MetricCard({ title, value, sub, icon = "▤", accent = "amber", delta }) {
   const a = ACCENTS[accent] || ACCENTS.amber;
   return (
     <div className="overflow-hidden rounded-2xl bg-panel shadow-lg shadow-black/20 ring-1 ring-line">
@@ -14,7 +14,22 @@ export default function MetricCard({ title, value, sub, icon = "▤", accent = "
         <div>
           <p className="text-sm font-medium text-ash">{title}</p>
           <p className="font-display mt-2 text-2xl font-bold tracking-tight text-frost">{value}</p>
-          {sub && <p className="mt-1 text-xs text-dim">{sub}</p>}
+          {(sub || delta) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {delta && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${
+                    delta.positive
+                      ? "bg-emerald-500/10 text-emerald-600 ring-emerald-500/30"
+                      : "bg-rose/10 text-rose ring-rose/30"
+                  }`}
+                >
+                  {delta.icon || (delta.positive ? "▲" : "▼")} {delta.text}
+                </span>
+              )}
+              {sub && <p className="text-xs text-dim">{sub}</p>}
+            </div>
+          )}
         </div>
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm ring-1 ${a.icon}`}>
           {icon}

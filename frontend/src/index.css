@@ -2,18 +2,18 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #f3ece0;           /* page background (beige) */
-  --color-panel: #fbf7ef;         /* cards & surfaces (cream) */
-  --color-raise: #efe4d2;         /* raised / hover / inputs (tan) */
-  --color-line: #ddccb0;          /* borders & dividers (sand) */
-  --color-amber: #8f6233;         /* primary accent (brown) */
-  --color-amberl: #c89f6b;        /* light accent (tan) */
-  --color-copper: #74482a;        /* deep accent (dark brown) */
-  --color-frost: #3b2f23;         /* primary text (dark brown) */
-  --color-ash: #6e5b45;           /* secondary text (brown) */
-  --color-dim: #99856b;           /* muted text (light brown) */
-  --color-jade: #3f8a66;          /* success / inflow (muted green) */
-  --color-rose: #b24c3b;          /* danger / outflow (terracotta) */
+  --color-ink: #ffffff;           /* page background (white) */
+  --color-panel: #ffffff;         /* cards & surfaces (white) */
+  --color-raise: #f6eff0;         /* raised / hover / inputs (light rose) */
+  --color-line: #e4d6d9;          /* borders & dividers (light rose) */
+  --color-amber: #7a1f2b;         /* primary accent (burgundy) */
+  --color-amberl: #a34a56;        /* light accent (softened burgundy) */
+  --color-copper: #5c1420;        /* deep accent (dark wine) */
+  --color-frost: #2a1a1c;         /* primary text (near-black charcoal) */
+  --color-ash: #5c4a4e;           /* secondary text (warm gray) */
+  --color-dim: #9a858a;           /* muted text (light warm gray) */
+  --color-jade: #2f7d5c;          /* success / inflow (muted green) */
+  --color-rose: #c0392b;          /* danger / outflow (red) */
   --color-skyx: #7a6a4f;          /* info (taupe) */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -26,8 +26,8 @@ html {
 body {
   background-color: var(--color-ink);
   background-image:
-    radial-gradient(1100px 500px at 88% -8%, rgba(143, 98, 51, 0.08), transparent 60%),
-    radial-gradient(900px 450px at -8% 108%, rgba(63, 138, 102, 0.06), transparent 60%);
+    radial-gradient(1100px 500px at 88% -8%, rgba(122, 31, 43, 0.07), transparent 60%),
+    radial-gradient(900px 450px at -8% 108%, rgba(47, 125, 92, 0.05), transparent 60%);
   background-attachment: fixed;
   color: var(--color-frost);
 }
@@ -37,11 +37,11 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cebc9f;
+  background: #d8c3c8;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #bfa98a;
+  background: #c2a5ab;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -66,5 +66,28 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+  .transition-all,
+  .will-change-transform {
+    transition: none !important;
   }
 }

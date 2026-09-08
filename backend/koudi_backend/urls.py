@@ -29,10 +29,19 @@ def spa(request, path=""):
         )
     target = (SPA_DIST / path).resolve()
     if target.is_file() and str(target).startswith(str(SPA_DIST.resolve())):
-        return FileResponse(open(target, "rb"))
+        # Assets have content-hashed filenames (index-<hash>.js/css) => safe to
+        # cache long. Everything else served as-is.
+        response = FileResponse(open(target, "rb"))
+        if target.name.startswith("index-"):
+            response["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
     index = SPA_DIST / "index.html"
     if index.exists():
-        return FileResponse(open(index, "rb"))
+        # index.html must never be cached so the browser always picks up the
+        # latest build and its new hashed assets.
+        response = FileResponse(open(index, "rb"))
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
     return HttpResponseNotFound("index.html not found")
 
 

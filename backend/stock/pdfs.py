@@ -23,7 +23,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from .models import CompanyProfile, DeliveryNote, compute_volume_m3
+from .models import CompanyProfile, CreditNote, DeliveryNote, compute_volume_m3
 
 VAT_RATE = Decimal("0.20")  # TVA 20%
 
@@ -52,6 +52,12 @@ def _company():
         "bank_rib": (p.bank_rib or "").replace(" ", ""),
     }
 
+def _delivery_refs(so):
+    """Attached Bon(s) de Livraison for an invoice (grouped BL numbers)."""
+    nums = [dn.bl_number for dn in so.delivery_notes.all()]
+    return "<br/>Bons de livraison : " + ", ".join(nums) if nums else ""
+
+
 _SUB_HEAD = ParagraphStyle(
     name="SubHead", fontName="Helvetica-Bold", fontSize=8, textColor=colors.HexColor("#74482a"),
 )
@@ -66,6 +72,96 @@ def _money(value):
 
 def _num(value, digits=4):
     return f"{Decimal(str(value)):,.{digits}f}".replace(",", " ")
+
+
+_UNITS = [
+    "zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit",
+    "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize",
+    "dix-sept", "dix-huit", "dix-neuf",
+]
+_TENS = [
+    "", "", "vingt", "trente", "quarante", "cinquante",
+    "soixante", "soixante-dix", "quatre-vingt", "quatre-vingt-dix",
+]
+
+
+def _below_100(n):
+    if n < 20:
+        return _UNITS[n]
+    t, u = divmod(n, 10)
+    if t == 7:  # 70 → 79
+        if u == 0:
+            return "soixante-dix"
+        if u == 1:
+            return "soixante-et-onze"
+        return f"soixante-{_UNITS[10 + u]}"
+    if t == 8:  # 80 → 89
+        if u == 0:
+            return "quatre-vingts"
+        return f"quatre-vingt-{_UNITS[u]}"
+    if t == 9:  # 90 → 99
+        if u == 0:
+            return "quatre-vingt-dix"
+        return f"quatre-vingt-{_UNITS[10 + u]}"
+    if u == 0:
+        return _TENS[t]
+    if u == 1:
+        return f"{_TENS[t]}-et-un"
+    return f"{_TENS[t]}-{_UNITS[u]}"
+
+
+def _below_1000(n):
+    if n < 100:
+        return _below_100(n)
+    h, r = divmod(n, 100)
+    head = "cent" if h == 1 else f"{_below_100(h)} cent"
+    if r == 0:
+        return head + ("s" if h > 1 else "")
+    return f"{head} {_below_100(r)}"
+
+
+def _integer_french_words(n):
+    """Spell any integer in French words (legally required on invoices)."""
+    if n == 0:
+        return "zéro"
+    chunks = []
+    scales = ((10**9, "milliard"), (10**6, "million"), (10**3, "mille"))
+    for value, name in scales:
+        count, n = divmod(n, value)
+        if count == 0:
+            continue
+        if count == 1 and name == "mille":
+            chunks.append("mille")
+        elif name == "mille":
+            chunks.append(f"{_below_1000(count)} mille")
+        elif count == 1:
+            chunks.append(f"un {name}")
+        else:
+            chunks.append(f"{_below_1000(count)} {name}s")
+    if n:
+        chunks.append(_below_1000(n))
+    return " ".join(chunks)
+
+
+def amount_in_words(amount):
+    """'12 345,67 MAD' → 'douze mille trois cent quarante-cinq dirhams et
+    soixante-sept centimes' (small caps are applied by the caller)."""
+    amount = Decimal(str(amount)).quantize(Decimal("0.01"))
+    negative = amount < 0
+    if negative:
+        amount = -amount
+    whole, cents = divmod(int(amount * 100), 100)
+    pieces = [
+        f"{_integer_french_words(whole)} dirham" if whole == 1
+        else f"{_integer_french_words(whole)} dirhams"
+    ]
+    if cents:
+        pieces.append(
+            f"{_integer_french_words(cents)} centime" if cents == 1
+            else f"{_integer_french_words(cents)} centimes"
+        )
+    text = " et ".join(pieces)
+    return ("moins " + text) if negative else text
 
 
 def _build_order_doc(so, doc_type):
@@ -129,9 +225,10 @@ def _build_order_doc(so, doc_type):
                     f"<br/>{so.client.address or ''}<br/>{so.client.tax_id or ''}",
                     _P,
                 ),
-                Paragraph(f"{so.warehouse.name}<br/>{so.warehouse.address or ''}", _P),
+Paragraph(f"{so.warehouse.name}<br/>{so.warehouse.address or ''}", _P),
                 Paragraph(
                     f"Client : {so.client.code}<br/>Commande : {so.so_number}"
+                    f"{_delivery_refs(so) if is_invoice else ''}"
                     f"<br/>Devise : {so.currency or 'MAD'}", _P,
                 ),
             ],
@@ -249,27 +346,47 @@ def _build_order_doc(so, doc_type):
         ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#ddccb0")),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
+]))
     story.append(lines_table)
     story.append(Spacer(1, 3 * mm))
     story.append(Paragraph(f"<b>Volume total bois : {_num(total_volume, 4)} m³</b>", ParagraphStyle(
         "VOL", parent=_SUB_HEAD, fontSize=9)))
+    if is_invoice:
+        words_style = ParagraphStyle(
+            "NMC", parent=_P, fontSize=8, leading=11,
+            textColor=colors.HexColor("#3b2f23"),
+        )
+        story.append(Spacer(1, 2 * mm))
+        story.append(Paragraph(
+            "Arrêtée la présente facture à la somme de : "
+            f"<b>{amount_in_words(grand_total)}</b>.",
+            words_style,
+        ))
     story.append(Spacer(1, 8 * mm))
 
-    # --- Footer --------------------------------------------------------------
+# --- Footer --------------------------------------------------------------
     if is_invoice:
+        days = getattr(so.client, "payment_terms_days", 30) or 30
         if comp["bank_rib"]:
             bank = f"{comp['bank_name']} — " if comp["bank_name"] else ""
             rib = " ".join(comp["bank_rib"][i:i + 4] for i in range(0, len(comp["bank_rib"]), 4))
-            note = f"Merci de votre confiance. Paiement à 30 jours — Virement bancaire {bank}: RIB {rib}."
+            note = (
+                f"Merci de votre confiance. Paiement à {days} jours — "
+                f"Virement bancaire {bank}: RIB {rib}."
+            )
         else:
-            note = "Merci de votre confiance. Paiement à 30 jours."
+            note = f"Merci de votre confiance. Paiement à {days} jours."
     else:
         note = "Document provisoire — ne constitue pas une facture. Valable 15 jours à compter de la date d'émission."
     story.append(Paragraph(
         f"<b>Conditions :</b> {note}", ParagraphStyle("F", parent=_P, fontSize=7.5),
     ))
     footer_bits = [b for b in (comp["name"], comp["address"], comp["tax_id"]) if b]
+    if is_invoice and comp["bank_rib"]:
+        if comp["bank_name"]:
+            footer_bits.append(f"RIB — {comp['bank_name']} : {comp['bank_rib']}")
+        else:
+            footer_bits.append(f"RIB : {comp['bank_rib']}")
     story.append(Paragraph(
         " — ".join(footer_bits),
         ParagraphStyle("FB", parent=_P, fontSize=6.5, textColor=colors.HexColor("#99856b")),
@@ -286,6 +403,165 @@ def build_invoice_pdf(so):
 
 def build_quotation_pdf(so):
     return _build_order_doc(so, "quotation")
+
+
+def build_credit_note_pdf(cn):
+    """Render a Facture d'Avoir (credit note) against an original invoice.
+
+    Shows the reason (return / volume correction / commercial), the linked
+    invoice (and optional Bon de Livraison), the HT / TVA / TTC amounts with
+    the total spelled out in French words, plus the legal footer and RIB.
+    """
+    title = "FACTURE D'AVOIR"
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4, topMargin=14 * mm, bottomMargin=14 * mm,
+        leftMargin=14 * mm, rightMargin=14 * mm,
+    )
+
+    story = []
+
+    comp = _company()
+    info_rows = [
+        [Paragraph(comp["address"], _SUB_HEAD), ""],
+        [Paragraph(comp["contact"], _SUB_HEAD), ""],
+        [Paragraph(comp["tax_id"], _SUB_HEAD), ""],
+    ]
+    ref_bits = []
+    if cn.sales_order:
+        ref_bits.append(f"Facture d'origine : {cn.sales_order.so_number}")
+    if cn.delivery_note:
+        ref_bits.append(f"Bon de livraison : {cn.delivery_note.bl_number}")
+    right_text = (
+        f"{title} N° <b>{cn.credit_note_number}</b><br/>"
+        f"Date : {cn.created_date:%d/%m/%Y}<br/>"
+        f"Motif : <b>{cn.reason_label}</b>"
+    )
+    header_rows = [
+        [
+            Paragraph(f"<b>{comp['name']}</b>", ParagraphStyle(
+                "H1", fontName="Helvetica-Bold", fontSize=20, textColor=colors.HexColor("#74482a"))),
+            Paragraph(f"<b>{title}</b>", ParagraphStyle(
+                "DT", fontName="Helvetica-Bold", fontSize=15, alignment=TA_RIGHT,
+                textColor=colors.HexColor("#3b2f23")),
+            ),
+        ],
+        [
+            Paragraph(comp["tagline"], _SUB_HEAD),
+            Paragraph(right_text, ParagraphStyle("DTR", parent=_P, alignment=TA_RIGHT)),
+        ],
+    ] + [row for row in info_rows if row[0].text]
+    header = Table(header_rows, colWidths=[doc.width * 0.55, doc.width * 0.45])
+    header.setStyle(TableStyle([
+        ("SPAN", (0, 0), (1, 0)),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.2, colors.HexColor("#8f6233")),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    story.append(header)
+    story.append(Spacer(1, 6 * mm))
+
+    info = Table(
+        [
+            [
+                Paragraph("<b>CLIENT</b>", _SUB_HEAD),
+                Paragraph("<b>RÉFÉRENCES</b>", _SUB_HEAD),
+            ],
+            [
+                Paragraph(
+                    f"<b>{cn.client.company_name}</b><br/>{cn.client.contact_name or ''}"
+                    f"<br/>{cn.client.address or ''}<br/>{cn.client.tax_id or ''}",
+                    _P,
+                ),
+                Paragraph("<br/>".join(ref_bits) if ref_bits else "—", _P),
+            ],
+        ],
+        colWidths=[doc.width * 0.50, doc.width * 0.50],
+    )
+    info.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#efe4d2")),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.4, colors.HexColor("#ddccb0")),
+        ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(info)
+    story.append(Spacer(1, 6 * mm))
+
+    ttc = cn.amount_ttc
+    vat = ttc - Decimal(str(cn.amount))
+    body = []
+
+    motif = dict(CreditNote.Reason.choices).get(cn.reason)
+    body.append(Paragraph(f"<b>Motif de l'avoir :</b> {motif}", _P))
+    if cn.volume_m3:
+        body.append(Paragraph(
+            f"<b>Volume concerné :</b> {_num(cn.volume_m3, 4)} m³", _P,
+        ))
+    if cn.notes:
+        body.append(Paragraph(f"<b>Notes :</b> {cn.notes}", _P))
+    if cn.applied_amount and Decimal(str(cn.applied_amount)) > 0:
+        body.append(Paragraph(
+            f"<b>Montant appliqué à la facture d'origine :</b> "
+            f"{_money(cn.applied_amount)}", _P,
+        ))
+    if body:
+        for p in body:
+            story.append(p)
+        story.append(Spacer(1, 6 * mm))
+
+    style = getSampleStyleSheet()
+    line_style = ParagraphStyle("LT", parent=style["BodyText"], fontSize=8, leading=10)
+    amounts = Table([
+        [Paragraph("", line_style), Paragraph("MONTANT HT", line_style)],
+        [Paragraph("", line_style), Paragraph(_money(cn.amount), line_style)],
+        [Paragraph("", line_style), Paragraph("TVA 20 %", line_style)],
+        [Paragraph("", line_style), Paragraph(_money(vat), line_style)],
+        [Paragraph("", line_style),
+         Paragraph(f"<b>TOTAL TTC (CRÉDIT CLIENT)</b>", line_style)],
+        [Paragraph("", line_style),
+         Paragraph(f"<b>{_money(ttc)}</b>", line_style)],
+    ], colWidths=[doc.width * 0.70, doc.width * 0.30])
+    amounts.setStyle(TableStyle([
+        ("BACKGROUND", (0, -2), (-1, -1), colors.HexColor("#f6f0e4")),
+        ("BOX", (0, 0), (-1, -1), 0.4, colors.HexColor("#ddccb0")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#ddccb0")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(amounts)
+    story.append(Spacer(1, 3 * mm))
+    words_style = ParagraphStyle(
+        "NMC", parent=_P, fontSize=8, leading=11, textColor=colors.HexColor("#3b2f23"),
+    )
+    story.append(Paragraph(
+        "Arrêté le présent avoir à la somme de : "
+        f"<b>{amount_in_words(ttc)}</b>.",
+        words_style,
+    ))
+    story.append(Spacer(1, 8 * mm))
+
+    story.append(Paragraph(
+        "<b>Conditions :</b> Ce document réduit la créance du client "
+        "à concurrence du montant TTC ci-dessus. Le solde éventuellement "
+        "appliqué à la facture d'origine est mentionné en référence.",
+        ParagraphStyle("F", parent=_P, fontSize=7.5),
+    ))
+    footer_bits = [b for b in (comp["name"], comp["address"], comp["tax_id"]) if b]
+    if comp["bank_rib"]:
+        if comp["bank_name"]:
+            footer_bits.append(f"RIB — {comp['bank_name']} : {comp['bank_rib']}")
+        else:
+            footer_bits.append(f"RIB : {comp['bank_rib']}")
+    story.append(Paragraph(
+        " — ".join(footer_bits),
+        ParagraphStyle("FB", parent=_P, fontSize=6.5, textColor=colors.HexColor("#99856b")),
+    ))
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.read()
 
 
 def _build_purchase_order_doc(po):

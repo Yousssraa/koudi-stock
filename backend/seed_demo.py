@@ -81,24 +81,151 @@ for old in ["Oak", "European Beech", "Ash", "Pine", "Teak"]:
     WoodType.objects.filter(name=old).update(is_active=False)
 
 SPECIES = [
-    ("Pin sylvestre", "Pinus sylvestris", "Softwood", 510),
-    ("Épicéa", "Picea abies", "Softwood", 450),
-    ("Sapelli", "Entandrophragma cylindricum", "Exotic", 650),
-    ("Kossipo", "Entandrophragma candollei", "Exotic", 640),
-    ("Dabema", "Piptadeniastrum africanum", "Exotic", 690),
-    ("Dibétou", "Lovoa trichilioides", "Exotic", 560),
-    ("Iroko", "Milicia excelsa", "Exotic", 650),
-    ("Chêne", "Quercus robur", "Hardwood", 720),
-    ("Noyer", "Juglans regia", "Hardwood", 640),
-    ("Okoumé", "Aucoumea klaineana", "Exotic", 440),
+    # (name, scientific, cat, density, provenances, durability, moisture, family, desc)
+    ("Pin sylvestre", "Pinus sylvestris", "Softwood", 510,
+     "Scandinavie (Suède, Finlande), Russie, Baltique, Pologne",
+     "Classe 3-4 (bois peu durable — à traiter en extérieur)",
+     "Séchage rapide et facile ; faible retrait ; humidité d'équilibre 12-16 %",
+     "Menuiserie & Agencement",
+     "Le pin sylvestre, dit « bois rouge » du Nord, est le grand classique de la construction et de la charpente. Tendre et résineux, il se travaille facilement, se cloue et se visse sans difficulté. Traité autoclave, il prolonge sa durée de vie en usage extérieur et au contact du sol."),
+    ("Épicéa", "Picea abies", "Softwood", 450,
+     "Scandinavie (Suède, Finlande), Europe du Nord",
+     "Classe 4 (peu durable — à traiter en extérieur)",
+     "Séchage rapide ; léger et stable ; humidité d'équilibre 12-16 %",
+     "Menuiserie & Agencement",
+     "L'épicéa, ou « bois blanc » du Nord, est léger, résineux et très régulier. Idéal pour la charpente légère, l'ossature, les voliges et le doublage, il offre un excellent rapport qualité-prix pour les chantiers structurels."),
+    ("Sapelli", "Entandrophragma cylindricum", "Exotic", 650,
+     "Afrique centrale (Cameroun, Gabon, Congo)",
+     "Classe 2-3 (durable)",
+     "Séchage lent et difficile — nécessite un séchoir ; bonne stabilité une fois sec",
+     "Menuiserie & Agencement",
+     "Le sapelli est un bois exotique rouge-brun aux reflets dorés, très apprécié en menuiserie d'agencement, ébénisterie et menuiserie intérieure. Stable et de belle apparence, il se travaille proprement et se vitrifie élégamment."),
+    ("Kossipo", "Entandrophragma candollei", "Exotic", 640,
+     "Afrique centrale (Cameroun, Gabon, Congo)",
+     "Classe 2-3 (durable)",
+     "Séchage lent ; retrait faible ; stable en service",
+     "Menuiserie & Agencement",
+     "Le kossipo est un bois exotique dense et durable, proche du sapelli. Il convient à l'ébénisterie, la menuiserie intérieure et les aménagements qui exigent une bonne résistance mécanique."),
+    ("Dabema", "Piptadeniastrum africanum", "Exotic", 690,
+     "Afrique de l'Ouest et centrale (Cameroun, Côte d'Ivoire)",
+     "Classe 2 (très durable)",
+     "Séchage lent ; moyennement nerveux ; humidité d'équilibre faible",
+     "Aménagement Int./Ext.",
+     "Le dabema est un bois exotique dur et dense à veinage soutenu. Sa bonne durabilité naturelle et sa résistance mécanique le destinent à l'aménagement extérieur, à la menuiserie lourde et aux structures."),
+    ("Dibétou", "Lovoa trichilioides", "Exotic", 560,
+     "Afrique centrale et de l'Ouest (Gabon, Cameroun)",
+     "Classe 3-4 (peu durable en extérieur)",
+     "Séchage assez rapide ; retrait faible ; très stable",
+     "Menuiserie & Agencement",
+     "Le dibétou, surnommé « noyer d'Afrique », présente un beau bois jaune doré à brun, très stable et facile à travailler. Il est idéal pour le mobilier, la menuiserie fine et la réalisation de façades et placages."),
+    ("Iroko", "Milicia excelsa", "Exotic", 650,
+     "Afrique de l'Ouest et centrale (Côte d'Ivoire, Ghana, Congo)",
+     "Classe 1-2 (très durable — imputrescible)",
+     "Séchage lent, peu de fentes ; excellente stabilité en service",
+     "Aménagement Int./Ext.",
+     "L'iroko, « teck d'Afrique », est un bois exotique imputrescible d'une durabilité exceptionnelle. Indispensable pour les terrasses extérieures, le mobilier de jardin, l'agencement maritime et tous les usages exposés à l'humidité."),
+    ("Chêne", "Quercus robur", "Hardwood", 720,
+     "France, Europe centrale, Russe",
+     "Classe 2 (durable)",
+     "Séchage lent ; fort retrait ; nécessite une saison soignée",
+     "Aménagement Int./Ext.",
+     "Le chêne est l'essence noble par excellence. Dense, résistant et chaleureux, il se prête à l'ébénisterie, aux plans de travail, aux escaliers, au parquet et à la menuiserie de caractère. Il demande un séchage lent pour éviter les fentes."),
+    ("Noyer", "Juglans regia", "Hardwood", 640,
+     "Europe (France, Italie, Espagne), Asie Mineure",
+     "Classe 3 (moyennement durable)",
+     "Séchage lent ; nécessite un séchage soigneux ; très stable une fois sec",
+     "Menuiserie & Agencement",
+     "Le noyer est un bois noble brun chocolat aux veinures magnifiques. Très prisé en ébénisterie d'art, placage et mobilier haut de gamme, il offre une finition exceptionnelle et une excellente stabilité."),
+    ("Okoumé", "Aucoumea klaineana", "Exotic", 440,
+     "Gabon, Afrique centrale (bassins de l'Ogooué)",
+     "Classe 3-4 (à protéger en extérieur)",
+     "Séchage rapide et sans problème ; très stable ; humidité d'équilibre 8-12 %",
+     "Panneaux",
+     "L'okoumé est le bois de référence du contreplaqué. Léger, stable et résistant à l'humidité relative, il est largement utilisé pour les panneaux contreplaqués, l'agencement et la construction légère."),
 ]
-for name, sci, cat, dens in SPECIES:
+for name, sci, cat, dens, prov, dur, moist, fam, desc in SPECIES:
     wt, _ = WoodType.objects.get_or_create(
         name=name,
         defaults={"scientific_name": sci, "category": cat, "density_kg_m3": dens},
     )
     wt.is_active = True
+    wt.scientific_name = sci
+    wt.category = cat
+    wt.density_kg_m3 = dens
+    wt.provenances = prov
+    wt.durability_class = dur
+    wt.moisture_note = moist
+    wt.comarbois_family = fam
+    wt.description = desc
     wt.save()
+
+# Legacy / secondary essences still held in stock (used in usages.js): enrich
+# them so their fiche sheet is complete on the boutique.
+LEGACY_ESSENCES = {
+    "Eucalyptus": {
+        "scientific_name": "Eucalyptus globulus",
+        "category": "Exotic",
+        "density_kg_m3": 750,
+        "provenances": "Australie, Amérique du Sud, Afrique du Nord (Maroc)",
+        "durability_class": "Classe 2 (durable — résistant au contact sol)",
+        "moisture_note": "Séchage rapide; sujet à la torsion si mal séché; très dense",
+        "comarbois_family": "Aménagement Int./Ext.",
+        "description": "L'eucalyptus est un bois exotique dense, dur et résistant, souvent utilisé pour les poteaux, clôtures, brise-vue et structures extérieures. Il tolère bien l'humidité et le contact avec le sol.",
+    },
+    "Hêtre étuvé": {
+        "scientific_name": "Fagus sylvatica",
+        "category": "Hardwood",
+        "density_kg_m3": 690,
+        "provenances": "Europe (France, Allemagne, Europe centrale)",
+        "durability_class": "Classe 5 (peu durable — intérieur uniquement)",
+        "moisture_note": "Séchage assez rapide; fort retrait; stable une fois étuvé",
+        "comarbois_family": "Menuiserie & Agencement",
+        "description": "Le hêtre étuvé est un bois blanc clair et homogène, idéal pour les sièges, la menuiserie intérieure, les objets et l'agencement. L'étuvage le stabilise et le protège des micro-organismes.",
+    },
+    "Pin Sylvestre (Bois Rouge)": {
+        "scientific_name": "Pinus sylvestris",
+        "category": "Softwood",
+        "density_kg_m3": 510,
+        "provenances": "Scandinavie (Suède, Finlande), Russie, Baltique",
+        "durability_class": "Classe 3-4 (peu durable — à traiter en extérieur)",
+        "moisture_note": "Séchage rapide et facile; faible retrait",
+        "comarbois_family": "Menuiserie & Agencement",
+        "description": "Le pin rouge du Nord est le grand classique de la construction et de la charpente (madriers, bastaings, chevrons, voliges). Tendre et résineux, il se travaille facilement et se traite bien à l'autoclave.",
+    },
+    "Sapin du Nord (Bois Blanc)": {
+        "scientific_name": "Picea abies",
+        "category": "Softwood",
+        "density_kg_m3": 450,
+        "provenances": "Scandinavie (Suède, Finlande), Europe du Nord",
+        "durability_class": "Classe 4 (peu durable — à traiter en extérieur)",
+        "moisture_note": "Séchage rapide; léger et stable",
+        "comarbois_family": "Menuiserie & Agencement",
+        "description": "Le sapin du Nord, ou « bois blanc », est léger, résineux et régulier. Parfait pour la charpente légère, l'ossature, les voliges et le doublage, à un excellent rapport qualité-prix.",
+    },
+}
+def _fold_essence(name):
+    """Case- and accent-insensitive key for matching essence names."""
+    import unicodedata as _ud
+    return "".join(
+        c for c in _ud.normalize("NFD", (name or "").lower())
+        if not _ud.combining(c)
+    )
+
+for _name, _enrich in LEGACY_ESSENCES.items():
+    _key = _fold_essence(_name)
+    _wt = None
+    for _candidate in WoodType.objects.filter(is_active=True):
+        if _fold_essence(_candidate.name) == _key:
+            _wt = _candidate
+            break
+    if _wt is None:
+        continue
+    # Retain the canonical name already present in the DB.
+    _enrich = dict(_enrich)
+    _enrich.pop("name", None)
+    for _k, _v in _enrich.items():
+        setattr(_wt, _k, _v)
+    _wt.save()
 species = {w.name: w for w in WoodType.objects.all()}
 
 # ---------------------------------------------------------------------------
@@ -211,6 +338,46 @@ OLD_DEMO_SKUS = [
     "PIN-045-120-4000", "PIN-025-100-4000", "IRO-050-150-3000", "TEK-030-120-2000",
 ]
 
+# Paragraphe « description produit » par SKU (affiché sur la fiche publique).
+PRODUCT_DESCRIPTIONS = {
+    # --- Bois rouge (Pin sylvestre) ---
+    "PR-063-175-4000": "Chevron en pin sylvestre rouge du Nord, scié brut, idéal pour la charpente et l'ossature des toitures. Section courante des zones de pression, il offre une tenue mécanique fiable et se travaille facilement sur chantier.",
+    "PR-063-225-4000": "Bastaing en pin sylvestre rouge scandinave, section robuste pour les solives, pannes et supports de charpente. Scié brut, le bois rouge du Nord se cloue et se visse sans effort pour tous vos projets structurels.",
+    "PR-050-150-4000": "Plateau en pin sylvestre rouge du Nord, polyvalent pour la menuiserie courante, le coffrage et les ouvrages de structure légère. Bonne régularité de section et excellent rapport qualité-prix.",
+    "PR-100-100-4000": "Madrier en pin rouge scandinave séché, section carrée pleine pour les poteaux, poutres et éléments de forte structure. Le séchage en séchoir réduit les tensions et garantit une mise en œuvre stable.",
+    "PR-020-100-3000": "Volige en pin sylvestre rouge, faible épaisseur pour le support de couverture, les caissons et les habillages de toiture. Une solution économique et robuste pour vos charpentes.",
+    "PR-050-100-3000": "Plateau léger en pin rouge du Nord pour la fixation des chevrons, l'ossature et les coffrages. Section régulière, faciles à manutentionner sur le chantier.",
+    # --- Bois blanc (Épicéa) ---
+    "EPC-063-175-4000": "Chevron en épicéa du Nord séché, léger et régulier, idéal pour la charpente légère et les zones de pression des toitures. Le bois blanc scandinave combine allégement et tenue mécanique.",
+    "EPC-063-225-4000": "Bastaing en épicéa séché pour solives et supports de structure. Bois blanc régulier, sans nœuds bloquants, parfait pour les ossatures de toiture et les planchers.",
+    "EPC-050-150-3000": "Plateau en épicéa du Nord pour l'ossature, les voliges et la menuiserie de structure. Léger et stable, il se travaille facilement et offre un très bon rendement au mètre cube.",
+    "EPC-027-040-3000": "Liteau en épicéa séché pour la pose des couvertures et l'écartement des chevrons. Section fine et précise, adaptée aux travaux de charpente et de couverture.",
+    # --- Bois exotique ---
+    "SAP-027-145-3000": "Planche de sapelli rabotée, bois exotique rouge-brun élégant pour l'agencement, la menuiserie intérieure et l'ébénisterie. Surface lisse prête à recevoir huile ou vernis, très stable une fois sec.",
+    "SAP-050-150-4000": "Plateau de sapelli brut de première qualité (FAS) pour la menuiserie de caractère, les plans de travail et l'ébénisterie. Belle figure veinée et excellente stabilité dimensionnelle.",
+    "KOS-050-150-3000": "Plateau de kossipo, bois exotique dense et durable, pour l'agencement, la menuiserie intérieure et les ouvrages exigeant une bonne résistance. Teinte brun-doré chaleureuse.",
+    "DAB-027-145-3000": "Planche de dabema, bois exotique dur et dense, idéal pour l'aménagement extérieur, la menuiserie lourde et les structures. Bonne résistance naturelle aux intempéries.",
+    "DIB-027-200-3000": "Planche de dibétou rabotée de première qualité, le « noyer d'Afrique ». Bois très stable et facile à travailler pour le mobilier haut de gamme, les façades et les placages.",
+    "IRO-050-150-3000": "Plateau d'iroko, « teck d'Afrique » imputrescible, pour les terrasses extérieures, le mobilier de jardin et l'agencement maritime. Une durabilité exceptionnelle en usage extérieur.",
+    # --- Bois noble ---
+    "CHE-027-145-2500": "Planche de chêne rabotée de qualité FAS, essence noble dense et chaleureuse pour l'ébénisterie, les plans de travail et la menuiserie de précision. Séchée en séchoir pour une mise en œuvre stable.",
+    "CHE-050-150-2500": "Plateau de chêne massif de première qualité pour les plans de travail, escaliers et meubles de caractère. Toucher naturel et veinage affirmé, parfait pour les intérieurs nobles.",
+    "NOY-040-120-2500": "Plateau de noyer poncé, bois noble brun chocolat aux veinures magnifiques. Destiné à l'ébénisterie d'art, aux plateaux de table et au mobilier haut de gamme.",
+    # --- Panneaux ---
+    "MDF-BRU-18-2500-1220": "Panneau MDF brut poncé, surface parfaitement lisse pour la peinture, le laquage et la découpe. Polyvalent pour l'agencement, la menuiserie intérieure et le mobilier.",
+    "MDF-DEC-18-2500-1220": "Panneau MDF décor, finition prête à l'emploi pour les façades de meubles, l'agencement et l'habillage intérieur. Consistance homogène et coupe nette.",
+    "STR-18-2500-1220": "Panneau stratifié, revêtement décoratif résistant pour les façades, plans de travail et agencements. Surface dure et facile à entretenir, nombreuses teintes disponibles.",
+    "OSB-12-2500-1250": "Panneau OSB 3, panneau de particules orientées pour l'ossature, le plancher, l'âme de mur et le coffrage sec. Résistant et économique, adapté aux usages structurels intérieurs.",
+    "LAT-19-2500-1220": "Panneau latté, âme de lattis de bois entre deux faces, pour les meubles et l'agencement exigeant une bonne planéité et une fixation solide. Stable et facile à usiner.",
+    "SOR-19-2500-1220": "Panneau Sorel brut, panneau de fibres homogène pour la menuiserie, l'habillage et l'isolation. Fonctionnel et économique, idéal pour les travaux courants.",
+    "HLG-18-2800-2070": "Panneau High Gloss laqué brillant, finition haut de gamme pour façades de cuisines et dressings. Effet miroir résistant, très prisé en agencement contemporain.",
+    "CPO-15-2500-1220": "Contreplaqué en okoumé, bois léger et stable, pour l'agencement, l'ébénisterie et la construction légère. Bonne résistance à l'humidité relative, surface lisse.",
+    # --- Coffrage ---
+    "CFR-18-2500-1250": "Panneau de coffrage polyvalent pour le béton armé, face lisse et arêtes protégées. Solution économique et résistante pour vos coffrages de dalles et voiles.",
+    "CPB-18-2500-1220": "Contreplaqué bakélisé pour coffrage de béton, film phénolique imprégné à haute résistance. Nombreuses réutilisations, parfait pour les voiles verticaux et dalles.",
+    "H20-200-80-5900": "Poutrelle de coffrage H20, âme en bois lamellé avec membrure en contreplaqué haute densité. Élément porteur des tablettes de coffrage, léger et très résistant à la flexion.",
+}
+
 print("Resetting transactional data (movements / inventory / orders)...")
 StockMovement.objects.all().delete()
 Inventory.objects.all().delete()
@@ -238,6 +405,7 @@ for (sku, name, sp, cat, grade, finish, t, w, l, mc, cost, sale, min_q, sup, _en
             "width_mm": w,
             "length_m": Decimal(l) / Decimal("1000"),
             "moisture_content": mc,
+            "description": PRODUCT_DESCRIPTIONS.get(sku),
             "cost_price": Decimal(cost),
             "sale_price": Decimal(sale),
             "min_stock_qty": Decimal(min_q),
@@ -245,6 +413,9 @@ for (sku, name, sp, cat, grade, finish, t, w, l, mc, cost, sale, min_q, sup, _en
         },
     )
     created += int(was_created)
+# Backfill descriptions on pre-existing products (idempotent re-seed).
+for sku, desc in PRODUCT_DESCRIPTIONS.items():
+    Product.objects.filter(sku=sku, description__isnull=True).update(description=desc)
 print(f"products created: {created} (total active: {Product.objects.filter(is_active=True).count()})")
 products = {p.sku: p for p in Product.objects.all()}
 

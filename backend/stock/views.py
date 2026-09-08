@@ -22,6 +22,7 @@ from .models import (
     AuditLog,
     Client,
     CompanyProfile,
+    CreditNote,
     DeliveryNote,
     DryingBatch,
     Inventory,
@@ -31,6 +32,9 @@ from .models import (
     PriceTier,
     Product,
     PurchaseOrder,
+    Quote,
+    QuoteItem,
+    ReferencePrice,
     SalesOrder,
     StockMovement,
     Supplier,
@@ -38,13 +42,17 @@ from .models import (
     WoodType,
 )
 from .serializers import (
+    AdminQuoteSerializer,
     AuditLogSerializer,
+    CatalogConfigSerializer,
     ClientSerializer,
     CompanyProfileSerializer,
+    CreditNoteSerializer,
     DeliveryNoteCreateSerializer,
     DeliveryNoteSerializer,
     DryingBatchSerializer,
     InventorySerializer,
+    InvoiceSerializer,
     KilnSerializer,
     MonthlyArchiveMonthSerializer,
     MonthlyArchiveSerializer,
@@ -55,6 +63,8 @@ from .serializers import (
     ProductSerializer,
     PurchaseOrderSerializer,
     PurchaseTransactionSerializer,
+    QuoteSerializer,
+    ReferencePriceSerializer,
     ReorderSerializer,
     SaleTransactionSerializer,
     SalesOrderSerializer,
@@ -94,6 +104,78 @@ class WoodTypeViewSet(viewsets.ReadOnlyModelViewSet):
 class WarehouseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Warehouse.objects.filter(is_active=True)
     serializer_class = WarehouseSerializer
+
+
+class ReferencePriceViewSet(viewsets.ModelViewSet):
+    """CRUD for the reference price grid (grille de prix) per essence.
+
+    Filters: ``?wood_type=<id>&category=&piece_type=&treatment=&is_active=``.
+    Price edits are audited as ``price_update`` on the ``reference_price``.
+    """
+
+    queryset = ReferencePrice.objects.select_related("wood_type").all()
+    serializer_class = ReferencePriceSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        p = self.request.query_params
+        if p.get("wood_type"):
+            qs = qs.filter(wood_type_id=p["wood_type"])
+        if p.get("category"):
+            qs = qs.filter(category=p["category"])
+        if p.get("piece_type"):
+            qs = qs.filter(piece_type=p["piece_type"])
+        if p.get("treatment"):
+            qs = qs.filter(treatment=p["treatment"])
+        if p.get("is_active") in ("0", "1"):
+            qs = qs.filter(is_active=(p["is_active"] == "1"))
+        return qs
+
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        audit("create", "reference_price", obj.pk, None, {
+            "wood_type": obj.wood_type.name if obj.wood_type else None,
+            "category": obj.category,
+            "piece_type": obj.piece_type,
+            "treatment": obj.treatment,
+            "unit_price_mad": str(obj.unit_price_mad),
+        })
+
+    def perform_update(self, serializer):
+        old = self.get_object()
+        old_price = old.unit_price_mad
+        obj = serializer.save()
+        audit("price_update", "reference_price", obj.pk, None, {
+            "wood_type": obj.wood_type.name if obj.wood_type else None,
+            "old_unit_price_mad": str(old_price),
+            "new_unit_price_mad": str(obj.unit_price_mad),
+        })
+
+    def perform_destroy(self, instance):
+        audit("delete", "reference_price", instance.pk, None, {
+            "wood_type": instance.wood_type.name if instance.wood_type else None,
+            "unit_price_mad": str(instance.unit_price_mad),
+        })
+        instance.delete()
+
+
+class CatalogConfigView(APIView):
+    """GET /api/catalog-config/ → the master-data lists for the back-office.
+
+    Returns the currently valid product categories, piece types, treatments,
+    grades, finishes and units-of-measure as JSON so the React admin renders
+    dynamic dropdowns that always match the backend's accepted values.
+    """
+
+    def get(self, request):
+        return Response({
+            "categories": [{"value": c[0], "label": c[1]} for c in Product.Category.choices],
+            "piece_types": [{"value": c[0], "label": c[1]} for c in Product.PieceType.choices],
+            "treatments": [{"value": c[0], "label": c[1]} for c in Product.Treatment.choices],
+            "grades": [{"value": c[0], "label": c[1]} for c in Product.Grade.choices],
+            "finishes": [{"value": c[0], "label": c[1]} for c in Product.Finish.choices],
+            "uoms": [{"value": c[0], "label": c[1]} for c in Product.UOM.choices],
+        })
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -397,9 +479,14 @@ class DeliveryNoteViewSet(viewsets.ReadOnlyModelViewSet):
             DeliveryNote.Status.PREPARATION,
             DeliveryNote.Status.IN_TRANSIT,
             DeliveryNote.Status.DELIVERED,
+            DeliveryNote.Status.WAITING,
+            DeliveryNote.Status.VALIDATED,
+            DeliveryNote.Status.INVOICED,
+            DeliveryNote.Status.CANCELLED,
         ):
             return Response(
-                {"detail": "Statut invalide. Utilisez preparation, in_transit ou delivered."},
+                {"detail": "Statut invalide. Utilisez preparation, in_transit, delivered, "
+                           "waiting, validated, invoiced ou cancelled."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
@@ -877,12 +964,17 @@ class PaymentTransactionView(APIView):
             sales_order=sales_order,
             payment_date=data.get("payment_date"),
             method=data.get("method"),
+            method_key=data.get("method_key"),
+            bank_name=data.get("bank_name"),
             reference=data.get("reference"),
+            due_date=data.get("due_date"),
             note=data.get("note"),
         )
         audit("payment", "payment", payment.pk, f"PAY-{payment.pk}", {
             "client": client.code,
             "amount": str(payment.amount),
+            "method_key": payment.method_key,
+            "due_date": payment.due_date.isoformat() if payment.due_date else None,
             "sales_order": sales_order.so_number if sales_order else None,
         })
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
@@ -1009,41 +1101,40 @@ class DashboardView(APIView):
             .values("product_id")
             .annotate(qty=Sum("quantity"))
         )
+        prods = {p.id: p for p in Product.objects.filter(volume_cubic_m__isnull=False)}
         total_volume = ZERO
         stock_value = ZERO
+        stock_rows = []
         for row in rows:
-            product = Product.objects.filter(pk=row["product_id"]).first()
-            if not product or product.volume_cubic_m is None:
+            product = prods.get(row["product_id"])
+            if not product:
                 continue
             qty = row["qty"] or ZERO
             vol = product.volume_cubic_m * qty
             total_volume += vol
             stock_value += vol * (product.cost_price or ZERO)  # per m3 in MAD
+            stock_rows.append((product, vol))
 
-        # Stock volume distribution grouped by wood species.
+        # Stock volume distribution grouped by wood species (volume computed in
+        # Python from the already-loaded products to avoid a slow F()*F() join).
         species_qs = (
             Inventory.objects.filter(quantity__gt=0, product__volume_cubic_m__isnull=False)
-            .values("product__wood_type__name", "product__category")
-            .annotate(volume_m3=Sum(F("product__volume_cubic_m") * F("quantity")))
-            .order_by("-volume_m3")
+            .values("product_id", "product__wood_type__name", "product__category")
+            .annotate(qty=Sum("quantity"))
         )
-        species_volume_raw = [
-            {
-                "name": row["product__wood_type__name"],
-                "category": row["product__category"],
-                "volume_m3": round(float(row["volume_m3"]), 4),
-            }
-            for row in species_qs
-        ]
         _sv_map = {}
-        for row in species_volume_raw:
-            if row["name"]:
-                label = row["name"]
-            elif row["category"] in ("Panneaux", "Coffrage"):
-                label = row["category"]
+        for row in species_qs:
+            prod = prods.get(row["product_id"])
+            if not prod:
+                continue
+            vol = float(prod.volume_cubic_m) * float(row["qty"] or ZERO)
+            if row["product__wood_type__name"]:
+                label = row["product__wood_type__name"]
+            elif row["product__category"] in ("Panneaux", "Coffrage"):
+                label = row["product__category"]
             else:
                 label = "Autre"
-            _sv_map[label] = round(_sv_map.get(label, 0) + row["volume_m3"], 4)
+            _sv_map[label] = round(_sv_map.get(label, 0) + vol, 4)
         species_volume = [
             {"name": name, "volume_m3": vol}
             for name, vol in sorted(_sv_map.items(), key=lambda x: -x[1])
@@ -1052,14 +1143,16 @@ class DashboardView(APIView):
         # Low stock items.
         low_stock = [
             p.pk
-            for p in Product.objects.filter(is_active=True)
+            for p in Product.objects.filter(is_active=True).prefetch_related("inventory_set")
             if p.stock_status == "low" or p.stock_status == "out_of_stock"
         ]
 
         # Reorder alerts: active products whose standing volume (m³) is below
         # their reorder threshold, with a suggested restock quantity.
         reorder_alerts = []
-        for p in Product.objects.filter(is_active=True, reorder_threshold_m3__gt=0):
+        for p in Product.objects.filter(
+            is_active=True, reorder_threshold_m3__gt=0
+        ).prefetch_related("inventory_set"):
             if not p.below_reorder:
                 continue
             threshold = p.reorder_threshold_m3
@@ -1193,10 +1286,65 @@ class DashboardView(APIView):
                 "out_m3": round(float(out_vol), 4),
             })
 
+        # ------------------------------------------------------------------
+        # 6-month volume flow (m³) — entrées vs sorties per calendar month.
+        # ------------------------------------------------------------------
+        monthly_moving_in = [
+            StockMovement.MovementType.PURCHASE_IN,
+            StockMovement.MovementType.SALE_RETURN,
+            StockMovement.MovementType.TRANSFER_IN,
+            StockMovement.MovementType.OPENING,
+        ]
+        monthly_moving_out = [
+            StockMovement.MovementType.SALE_OUT,
+            StockMovement.MovementType.PURCHASE_RETURN,
+            StockMovement.MovementType.TRANSFER_OUT,
+        ]
+        monthly_flow_series = []
+        for i in range(5, -1, -1):
+            idx = now.year * 12 + (now.month - 1) - i
+            y, mo = divmod(idx, 12)
+            mo += 1
+            start = timezone.make_aware(datetime(y, mo, 1, tzinfo=None))
+            end = (timezone.make_aware(datetime(y + 1, 1, 1, tzinfo=None))
+                   if mo == 12 else timezone.make_aware(datetime(y, mo + 1, 1, tzinfo=None)))
+            in_moves = list(StockMovement.objects.filter(
+                movement_type__in=monthly_moving_in, moved_at__gte=start, moved_at__lt=end
+            ).select_related("product"))
+            out_moves = list(StockMovement.objects.filter(
+                movement_type__in=monthly_moving_out, moved_at__gte=start, moved_at__lt=end
+            ).select_related("product"))
+            monthly_flow_series.append({
+                "month": start.strftime("%b %y"),
+                "key": start.strftime("%Y-%m"),
+                "in_m3": round(float(sum((m.volume_m3 or ZERO) for m in in_moves)), 4),
+                "out_m3": round(float(sum((m.volume_m3 or ZERO) for m in out_moves)), 4),
+            })
+
+        # Inbound volume (m³) this calendar month — "Entrées Dépôt".
+        this_month_start = timezone.make_aware(datetime(
+            now.year, now.month, 1, tzinfo=None
+        ))
+        stock_in_month_m3 = round(float(sum(
+            (m.volume_m3 or ZERO)
+            for m in StockMovement.objects.filter(
+                movement_type__in=monthly_moving_in, moved_at__gte=this_month_start
+            ).select_related("product")
+        )), 4)
+
+        # Value of the whole stock at the sale price (Valeur Globale du Stock).
+        stock_value_sale = ZERO
+        for product, vol in stock_rows:
+            stock_value_sale += vol * (product.sale_price or ZERO)
+
+        # Activity timeline — the latest audited actions across the back-office.
+        activity_qs = AuditLog.objects.select_related("user").order_by("-created_at", "-id")[:12]
+
         return Response(
             {
                 "total_volume_m3": round(float(total_volume), 4),
                 "stock_value": round(float(stock_value), 2),
+                "stock_value_sale": round(float(stock_value_sale), 2),
                 "species_volume": species_volume,
                 "low_stock_count": len(low_stock),
                 "low_stock_ids": low_stock,
@@ -1212,6 +1360,9 @@ class DashboardView(APIView):
                 "shipments_today": shipments_today,
                 "shipments_in_prep": shipments_in_prep,
                 "movement_series": movement_series,
+                "monthly_flow_series": monthly_flow_series,
+                "stock_in_month_m3": stock_in_month_m3,
+                "activity_feed": AuditLogSerializer(activity_qs, many=True).data,
             }
         )
 
@@ -1404,3 +1555,445 @@ class CompanyProfileView(APIView):
             "fields": sorted(request.data.keys()),
         })
         return Response(serializer.data)
+
+
+# ---------------------------------------------------------------------------
+# Espace Pro — back-office: client devis (quotes) processing
+# ---------------------------------------------------------------------------
+class AdminQuoteListView(APIView):
+    """GET /api/quotes/ → staff ticket of the client devis requests.
+
+    Filters: ?status=, ?client=, ?search=  (quote number / client company).
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = (
+            Quote.objects.select_related("client", "created_by")
+            .prefetch_related("items__product")
+            .order_by("-created_at")
+        )
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        client_id = request.query_params.get("client")
+        if client_id:
+            qs = qs.filter(client__id=client_id)
+        search = request.query_params.get("search", "").strip()
+        if search:
+            qs = qs.filter(
+                Q(quote_number__icontains=search)
+                | Q(client__company_name__icontains=search)
+                | Q(client__code__icontains=search)
+            )
+        return Response(AdminQuoteSerializer(qs[:200], many=True).data)
+
+
+class AdminQuoteDetailView(APIView):
+    """GET /api/quotes/<pk>/ → a devis with its lines for processing."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk=None):
+        quote = (
+            Quote.objects.select_related("client", "created_by")
+            .prefetch_related("items__product")
+            .filter(pk=pk)
+            .first()
+        )
+        if quote is None:
+            return Response(
+                {"detail": "Devis introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response(AdminQuoteSerializer(quote).data)
+
+
+class AdminQuoteActionView(APIView):
+    """POST /api/quotes/<pk>/<action>/ → process a client devis request.
+
+    Actions:
+      - ``convert`` : turn an sent/accepted quote into a real sales order
+                      (``warehouse_id`` optional — falls back to first active dépôt)
+                      and mark the quote ``accepted``.
+      - ``reject``  : refuse the request (→ ``rejected``); ``reason`` is kept in
+                      the quote notes and shared with the client.
+    """
+
+    permission_classes = [IsAdminUser]
+    parser_classes = [JSONParser]
+
+    def _get(self, pk):
+        return (
+            Quote.objects.select_related("client")
+            .prefetch_related("items__product")
+            .filter(pk=pk)
+            .first()
+        )
+
+    def post(self, request, pk=None, action=None):
+        quote = self._get(pk)
+        if quote is None:
+            return Response(
+                {"detail": "Devis introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
+        client = quote.client
+
+        if action == "convert":
+            if quote.status not in (Quote.Status.SENT, Quote.Status.ACCEPTED):
+                return Response(
+                    {"detail": "Seuls les devis envoyés ou acceptés peuvent être convertis en commande."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            warehouse = None
+            warehouse_id = request.data.get("warehouse_id")
+            if warehouse_id:
+                warehouse = Warehouse.objects.filter(pk=warehouse_id, is_active=True).first()
+            if warehouse is None:
+                warehouse = Warehouse.objects.filter(is_active=True).order_by("pk").first()
+            if warehouse is None:
+                return Response(
+                    {"detail": "Aucun dépôt actif — impossible de créer la commande."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            blocked, credit_summary = services.check_sale_credit(
+                client, quote.total_amount or ZERO
+            )
+            if blocked:
+                return Response(
+                    {
+                        "detail": "Client bloqué — la commande ne peut pas être créée "
+                                  "tant que le compte n'est pas régularisé.",
+                        "overdue": float(credit_summary["overdue"]),
+                        "outstanding": float(credit_summary["outstanding"]),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                so, discount_percent, tier_name = services.convert_quote_to_sale(quote, warehouse)
+            except Exception as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+            quote.status = Quote.Status.ACCEPTED
+            quote.save(update_fields=["status", "updated_at"])
+
+            services.notify_client(
+                client,
+                "order_update",
+                "Commande créée depuis votre devis",
+                f"Votre devis {quote.quote_number} a été converti en commande {so.so_number}.",
+                link="/pro/commandes",
+            )
+            audit("convert_quote", "sales_order", so.pk, so.so_number, {
+                "quote": quote.quote_number,
+                "client": client.code,
+                "discount_percent": str(discount_percent),
+                "tier": tier_name,
+            })
+            return Response({
+                "quote": AdminQuoteSerializer(quote).data,
+                "order": SalesOrderSerializer(so).data,
+            })
+
+        if action == "reject":
+            if quote.status not in (Quote.Status.DRAFT, Quote.Status.SENT):
+                return Response(
+                    {"detail": "Ce devis n'est plus modifiable."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            reason = (request.data.get("reason") or "").strip()
+            quote.status = Quote.Status.REJECTED
+            if reason:
+                quote.notes = reason
+                quote.save(update_fields=["status", "notes", "updated_at"])
+            else:
+                quote.save(update_fields=["status", "updated_at"])
+            services.notify_client(
+                client,
+                "quote_update",
+                "Votre devis a été refusé",
+                f"Votre devis {quote.quote_number} n'a pas été retenu."
+                + (f" Motif : {reason}" if reason else ""),
+                link="/pro/devis",
+            )
+            audit("reject", "quote", quote.pk, quote.quote_number, {
+                "client": client.code, "reason": reason or "",
+            })
+            return Response(AdminQuoteSerializer(quote).data)
+
+        return Response(
+            {"detail": "Action inconnue."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+# ---------------------------------------------------------------------------
+# Facturation — registre de factures, regroupement de BL, avoirs, relances, exports
+# ---------------------------------------------------------------------------
+def _invoiced_orders_qs():
+    """Shipped(-ish) sales orders that behave as invoices."""
+    return (
+        SalesOrder.objects.filter(status__in=services._SHIPPED_STATUSES)
+        .select_related("client", "warehouse")
+        .prefetch_related(
+            Prefetch("items__product"),
+            Prefetch("payments"),
+            Prefetch("delivery_notes"),
+            Prefetch("credit_notes"),
+        )
+    )
+
+
+class InvoiceListView(APIView):
+    """GET /api/invoices/ → register of all invoiced deliveries with filters.
+
+    Query params : ``client``, ``status`` (paid/awaited/partial/pending/overdue),
+    ``from``/``to`` (dates), ``q`` (number/company search). Returns ``results``
+    (InvoiceSerializer rows) and ``summary`` (counts + totals per status).
+    """
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = _invoiced_orders_qs()
+        client_id = request.query_params.get("client")
+        if client_id:
+            qs = qs.filter(client_id=client_id)
+        frm = request.query_params.get("from")
+        to = request.query_params.get("to")
+        if frm:
+            qs = qs.filter(order_date__gte=frm)
+        if to:
+            qs = qs.filter(order_date__lte=to)
+        q = (request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(so_number__icontains=q)
+
+        invoices = list(qs.order_by("-order_date"))
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            invoices = [so for so in invoices
+                        if services.invoice_payment_status(so, so.client)["key"] == status_filter]
+
+        summary = {
+            "paid": 0, "awaited": 0, "partial": 0, "pending": 0, "overdue": 0,
+            "total_invoiced": 0.0, "total_balance": 0.0, "total_overdue": 0.0,
+        }
+        today = timezone.localdate()
+        for so in invoices:
+            st = services.invoice_payment_status(so, so.client, today=today)["key"]
+            summary[st] += 1
+            summary["total_invoiced"] += float(so.total_amount or ZERO)
+            summary["total_balance"] += float(so.balance_due)
+            if st == "overdue":
+                summary["total_overdue"] += float(so.balance_due)
+        summary = {k: round(v, 2) if isinstance(v, float) else v
+                   for k, v in summary.items()}
+
+        return Response({
+            "results": InvoiceSerializer(invoices, many=True).data,
+            "summary": summary,
+        })
+
+
+class InvoiceDetailView(APIView):
+    """GET /api/invoices/<pk>/ → one invoice document (with BLs + avoirs)."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk=None):
+        so = _invoiced_orders_qs().filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
+        if so is None:
+            return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(InvoiceSerializer(so).data)
+
+
+class InvoicePdfView(APIView):
+    """GET /api/invoices/<pk>/pdf/ → official A4 invoice (TVA 20 %, net à payer)."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk=None):
+        so = _invoiced_orders_qs().filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
+        if so is None:
+            return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        audit("download", "sales_order", so.pk, so.so_number, {"document": "invoice"})
+        return _pdf_response(pdfs.build_invoice_pdf(so), f"{so.so_number}_FACTURE.pdf")
+
+
+class InvoiceWhatsAppReminderView(APIView):
+    """GET /api/invoices/<pk>/reminder/whatsapp/ → pre-filled wa.me deep link."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk=None):
+        so = SalesOrder.objects.filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
+        if so is None:
+            return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"url": services.build_whatsapp_reminder_url(so.client, so)})
+
+
+class InvoiceEmailReminderView(APIView):
+    """POST /api/invoices/<pk>/reminder/email/ → automated SMTP reminder."""
+
+    permission_classes = [IsAdminUser]
+    parser_classes = [JSONParser]
+
+    def post(self, request, pk=None):
+        so = SalesOrder.objects.filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
+        if so is None:
+            return Response({"detail": "Facture introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        result = services.send_payment_reminder_email(so.client, so)
+        audit("reminder", "sales_order", so.pk, so.so_number, result)
+        return Response(result)
+
+
+class InvoiceExportView(APIView):
+    """GET /api/invoices/export/?client=&from=&to=&status= → comptable CSV (SAGE/Ciel)."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        client = None
+        client_id = request.query_params.get("client")
+        if client_id:
+            client = Client.objects.filter(pk=client_id).first()
+        frm = request.query_params.get("from")
+        to = request.query_params.get("to")
+        status_filter = request.query_params.get("status")
+        content, filename = services.export_invoices_csv(
+            client=client, payment_status=status_filter,
+            start=frm or None, end=to or None,
+        )
+        response = HttpResponse(content, content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f"attachment; filename={filename}"
+        return response
+
+
+class UnbilledDeliveryNotesView(APIView):
+    """GET /api/invoices/unbilled-bl/?client=<id> → BLs available for grouped invoicing."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = DeliveryNote.objects.filter(invoice__isnull=True).exclude(
+            status=DeliveryNote.Status.CANCELLED
+        ).select_related("client", "warehouse").prefetch_related("items__product")
+        client_id = request.query_params.get("client")
+        if client_id:
+            qs = qs.filter(client_id=client_id)
+        return Response([
+            {
+                "id": bl.pk,
+                "bl_number": bl.bl_number,
+                "client_id": bl.client_id,
+                "client": bl.client.company_name,
+                "warehouse": bl.warehouse.name,
+                "status": bl.status,
+                "order_date": bl.order_date.isoformat(),
+                "total_amount": float(bl.total_amount),
+                "total_volume_m3": round(float(bl.total_volume_m3), 4),
+                "item_count": bl.items.count(),
+            }
+            for bl in qs.order_by("-order_date")[:200]
+        ])
+
+
+class GroupedInvoiceView(APIView):
+    """POST /api/invoices/grouped/ → merge un-invoiced BLs into one monthly Facture.
+
+    Body: { "client_id": 1, "warehouse_id": 1, "bl_ids": [3, 4],
+            "notes"?: "...", "order_date"?: "YYYY-MM-DD" }
+    """
+
+    permission_classes = [IsAdminUser]
+    parser_classes = [JSONParser]
+
+    def post(self, request):
+        client_id = request.data.get("client_id")
+        warehouse_id = request.data.get("warehouse_id")
+        bl_ids = request.data.get("bl_ids") or []
+        client = Client.objects.filter(pk=client_id, is_active=True).first()
+        warehouse = Warehouse.objects.filter(pk=warehouse_id, is_active=True).first()
+        if client is None or warehouse is None:
+            return Response(
+                {"detail": "Client ou dépôt introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
+        try:
+            so = services.create_grouped_invoice(
+                client,
+                warehouse,
+                bl_ids,
+                order_date=request.data.get("order_date"),
+                notes=request.data.get("notes"),
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        audit("create", "sales_order", so.pk, so.so_number, {
+            "client": client.code,
+            "warehouse": warehouse.code,
+            "bls": [str(i) for i in bl_ids],
+            "amount": str(so.total_amount),
+        })
+        so = _invoiced_orders_qs().select_related().filter(pk=so.pk).first()
+        return Response(InvoiceSerializer(so).data, status=status.HTTP_201_CREATED)
+
+
+class CreditNoteListCreateView(APIView):
+    """GET /api/credit-notes/ (?client=) | POST /api/credit-notes/ → emit an Avoir."""
+
+    permission_classes = [IsAdminUser]
+    parser_classes = [JSONParser]
+
+    def get(self, request):
+        qs = CreditNote.objects.select_related("client", "sales_order", "delivery_note")
+        client_id = request.query_params.get("client")
+        if client_id:
+            qs = qs.filter(client_id=client_id)
+        return Response(CreditNoteSerializer(qs[:200], many=True).data)
+
+    def post(self, request):
+        serializer = CreditNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        client = data.get("client") or Client.objects.filter(pk=request.data.get("client_id")).first()
+        if client is None:
+            return Response({"detail": "Client introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        sales_order = data.get("sales_order")
+        reason = data.get("reason") or CreditNote.Reason.RETURN
+        try:
+            cn = services.create_credit_note(
+                client,
+                sales_order=sales_order,
+                reason=reason,
+                amount=data["amount"],
+                volume_m3=data.get("volume_m3"),
+                notes=data.get("notes"),
+                created_by=request.user,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        audit("create", "credit_note", cn.pk, cn.credit_note_number, {
+            "client": client.code,
+            "reason": reason,
+            "amount": str(cn.amount),
+            "applied": str(cn.applied_amount),
+            "sales_order": sales_order.so_number if sales_order else None,
+        })
+        return Response(CreditNoteSerializer(cn).data, status=status.HTTP_201_CREATED)
+
+
+class CreditNotePdfView(APIView):
+    """GET /api/credit-notes/<pk>/pdf/ → Facture d'Avoir A4 PDF."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk=None):
+        cn = CreditNote.objects.select_related("client", "sales_order").filter(pk=pk).first()
+        if cn is None:
+            return Response({"detail": "Avoir introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        audit("download", "credit_note", cn.pk, cn.credit_note_number, {"document": "credit_note"})
+        return _pdf_response(pdfs.build_credit_note_pdf(cn), f"{cn.credit_note_number}_AVOIR.pdf")

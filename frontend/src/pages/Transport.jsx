@@ -18,12 +18,25 @@ const STATUS_BADGE = {
   preparation: "bg-amber/10 text-amber ring-amber/30",
   in_transit: "bg-skyx/10 text-skyx ring-skyx/30",
   delivered: "bg-jade/10 text-jade ring-jade/30",
+  waiting: "bg-amber/10 text-amber ring-amber/30",
+  validated: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30",
+  invoiced: "bg-skyx/10 text-skyx ring-skyx/30",
+  cancelled: "bg-rose/10 text-rose ring-rose/30",
 };
-const STATUS_ORDER = ["preparation", "in_transit", "delivered"];
-const STATUS_NEXT = { preparation: "in_transit", in_transit: "delivered" };
+const STATUS_ORDER = ["waiting", "validated", "invoiced", "cancelled", "preparation", "in_transit", "delivered"];
+const STATUS_NEXT = { preparation: "in_transit", in_transit: "delivered", waiting: "validated", validated: "invoiced" };
+const STATUS_LABELS = {
+  preparation: "En préparation",
+  in_transit: "En cours",
+  delivered: "Livré",
+  waiting: "En attente",
+  validated: "Validé & Chargé",
+  invoiced: "Facturé",
+  cancelled: "Annulé",
+};
 
 function StatusPill({ status }) {
-  const label = { preparation: "En préparation", in_transit: "En cours", delivered: "Livré" }[status] || status;
+  const label = STATUS_LABELS[status] || status;
   return (
     <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${STATUS_BADGE[status] || STATUS_BADGE.preparation}`}>
       {label}
@@ -142,6 +155,10 @@ export default function Transport() {
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {[
               { key: "", label: "Tous" },
+              { key: "waiting", label: "En attente" },
+              { key: "validated", label: "Validé & Chargé" },
+              { key: "invoiced", label: "Facturé" },
+              { key: "cancelled", label: "Annulé" },
               { key: "preparation", label: "En préparation" },
               { key: "in_transit", label: "En cours" },
               { key: "delivered", label: "Livré" },
@@ -222,7 +239,7 @@ export default function Transport() {
                         disabled={acting === bl.id}
                         className="rounded-lg border border-line bg-panel px-4 py-2 text-sm font-semibold text-ash transition hover:bg-raise hover:text-frost disabled:opacity-50"
                       >
-                        {acting === bl.id ? "…" : bl.status === "preparation" ? "→ Expédier (En cours)" : "→ Marquer Livré"}
+                        {acting === bl.id ? "…" : bl.status === "preparation" ? "→ Expédier (En cours)" : bl.status === "waiting" ? "→ Valider & Charger" : bl.status === "validated" ? "→ Marquer Facturé" : "→ Marquer Livré"}
                       </button>
                     )}
                   </div>

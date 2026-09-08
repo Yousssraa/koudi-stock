@@ -14,13 +14,26 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .audit import audit
-from .models import CompanyProfile, Lead, Product
+from .emails import notify_lead
+from .models import CompanyProfile, Lead, Product, WoodType
 from .pdfs import build_catalog_pdf
 from .serializers import (
     PublicCategorySerializer,
     PublicLeadSerializer,
     PublicProductSerializer,
+    PublicWoodTypeLightSerializer,
+    PublicWoodTypeSerializer,
 )
+
+# The four umbrella families from the Comarbois-style catalog that group the
+# essence data sheets on the boutique.
+COMARBOIS_FAMILIES = {
+    "Menuiserie & Agencement": "Menuiserie & Agencement",
+    "Panneaux": "Panneaux",
+    "Aménagement Int./Ext.": "Aménagement Int./Ext.",
+    "Produits métallurgiques": "Produits métallurgiques",
+}
+FAMILY_ORDER = list(COMARBOIS_FAMILIES.values())
 
 # Human-readable labels mirroring Product.Category choices (FR).
 CATEGORY_LABELS = {
@@ -77,6 +90,80 @@ class PublicCategoriesView(APIView):
         return Response(PublicCategorySerializer(data, many=True).data)
 
 
+class PublicEssencesView(APIView):
+    """GET /api/public/essences/ → active essences grouped by Comarbois family.
+
+    Each essence is returned light (name / family / category) so the vitrine can
+    build the merged "Menuiserie & Agencement, Panneaux, Aménagement Int./Ext.,
+    Produits métallurgiques" inventory, plus its ``product_count``.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        rows = (
+            WoodType.objects.filter(is_active=True)
+            .annotate(product_count=Count("product", filter=Q(product__is_active=True)))
+            .order_by("name")
+        )
+        counts = {r.pk: r.product_count for r in rows}
+        data = PublicWoodTypeLightSerializer(rows, many=True).data
+        for item in data:
+            item["product_count"] = counts.get(item["id"], 0)
+        grouped = {fam: [] for fam in FAMILY_ORDER}
+        for item in data:
+            fam = item.get("comarbois_family") or "Aménagement Int./Ext."
+            grouped.setdefault(fam, []).append(item)
+        return Response(
+            {
+                "families": [
+                    {"key": fam, "label": COMARBOIS_FAMILIES.get(fam, fam),
+                     "essences": grouped.get(fam, [])}
+                    for fam in FAMILY_ORDER
+                ],
+                "total": len(data),
+            }
+        )
+
+
+class PublicEssenceDetailView(APIView):
+    """GET /api/public/essences/<name>/ → full essence data sheet + its products.
+
+    ``name`` is the essence (wood type) name (URL-encoded). Returns the fiche
+    (provenances, humidité/durabilité, utilisations) plus every active product
+    of that essence for the "produits associés" / range display.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, name):
+        wood_type = WoodType.objects.filter(name__iexact=name, is_active=True).first()
+        if wood_type is None:
+            # Try a fuzzy match (accent-insensitive fallback).
+            wood_type = (
+                WoodType.objects.filter(is_active=True)
+                .filter(name__icontains=name)
+                .order_by("id")
+                .first()
+            )
+        if wood_type is None:
+            return Response(
+                {"detail": "Essence introuvable."}, status=status.HTTP_404_NOT_FOUND
+            )
+        products = (
+            Product.objects.select_related("wood_type")
+            .prefetch_related("inventory_set")
+            .filter(is_active=True, wood_type=wood_type)
+            .order_by("name")
+        )
+        return Response(
+            {
+                "essence": PublicWoodTypeSerializer(wood_type).data,
+                "products": PublicProductSerializer(products, many=True).data,
+            }
+        )
+
+
 class PublicProductsView(APIView):
     """GET /api/public/products/ → active products for the boutique.
 
@@ -90,6 +177,7 @@ class PublicProductsView(APIView):
         params = request.query_params
         qs = (
             Product.objects.select_related("wood_type")
+            .prefetch_related("inventory_set")
             .filter(is_active=True)
             .order_by("name")
         )
@@ -115,6 +203,7 @@ class PublicProductDetailView(APIView):
     def get(self, request, pk):
         product = (
             Product.objects.select_related("wood_type")
+            .prefetch_related("inventory_set")
             .filter(pk=pk, is_active=True)
             .first()
         )
@@ -191,6 +280,8 @@ class PublicLeadView(APIView):
                 "requested_lines": lead.requested_lines,
             },
         )
+        # Notify the company by e-mail (deliverability depends on SMTP settings).
+        notify_lead(lead)
         return Response({"id": lead.pk, "status": "received"}, status=status.HTTP_201_CREATED)
 
 
@@ -206,6 +297,7 @@ class PublicCatalogView(APIView):
     def get(self, request):
         qs = (
             Product.objects.select_related("wood_type")
+            .prefetch_related("inventory_set")
             .filter(is_active=True)
             .order_by("name")
         )

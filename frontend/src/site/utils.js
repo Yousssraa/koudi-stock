@@ -20,12 +20,75 @@ const CATEGORY_IMAGE = {
   "Bois de Construction": "/wood/pin-sylvestre.jpg",
   "Bois Traité Autoclave": "/wood/epicea.jpg",
   "Bois Feuillus & Nobles": "/wood/chene.jpg",
-  "Panneaux & Dérivés": "/wood/plywood.jpg",
+  "Panneaux & Dérivés": "/wood/contreplaque.jpg",
+  "Bois rouge": "/wood/menuiserie.jpg",
+  "Bois blanc": "/wood/bois-blanc.jpg",
+  "Bois exotique": "/wood/iroko.jpg",
+  "Bois noble": "/wood/chene.jpg",
+  "Panneaux": "/wood/panneau-deco.jpg",
+  "Coffrage": "/wood/coffrage.jpg",
 };
 
+// Real photos per product type, matched by keyword in the product name.
+const PRODUCT_NAME_IMAGE = [
+  { keys: ["bakelise", "bakélisé"], img: "/wood/contreplaque-bakelise.jpg" },
+  { keys: ["contreplaqu", "plywood"], img: "/wood/contreplaque.jpg" },
+  { keys: ["mdf", "stratifi", "high gloss"], img: "/wood/mdf-photo.jpg" },
+  { keys: ["osb"], img: "/wood/osb-photo.jpg" },
+  { keys: ["latt", "sorel"], img: "/wood/particule.jpg" },
+  { keys: ["coffrage"], img: "/wood/coffrage.jpg" },
+  { keys: ["h20", "poutrelle", "poutre"], img: "/wood/bois-charpente.jpg" },
+  { keys: ["madrier", "poteau", "rondin"], img: "/wood/madrier-photo.jpg" },
+  // Softwood framing only — requires a softwood indicator in the name,
+  // otherwise "Plateau Sapelli/Chêne/Noyer" would wrongly read as framing.
+  { keys: ["chevron", "bastaing", "plateau", "volige", "liteau"], softwood: true, img: "/wood/bois-charpente.jpg" },
+  { keys: ["lame de terrasse"], img: "/wood/bois-charpente.jpg" },
+];
+
+const SOFTWOOD = /pin|epicea|épicéa|sapin|éphra|resineux/;
+
+function detectPanelType(product) {
+  const n = `${product?.name || ""} ${product?.sku || ""}`.toLowerCase();
+  const isSoftwood = SOFTWOOD.test(n);
+
+  // Dedicated real photos for framing products / plywood by essence.
+  if (n.includes("bastaing")) {
+    if (n.includes("pin") && !/(epicea|épicéa)/.test(n)) return "/wood/bastaing-pin.jpg";
+    return "/wood/bastaing-epicea.jpg";
+  }
+  if (n.includes("chevron")) {
+    if (n.includes("pin") && !/(epicea|épicéa)/.test(n)) return "/wood/chevron-pin.jpg";
+    return "/wood/chevron-epicea.jpg";
+  }
+  if (n.includes("liteau") || n.includes("liteaux")) {
+    return "/wood/liteau-epicea.jpg";
+  }
+  if (n.includes("madrier")) {
+    if (n.includes("pin") && !/(epicea|épicéa)/.test(n)) return "/wood/madrier-pin.jpg";
+    return "/wood/madrier-photo.jpg";
+  }
+  if (n.includes("contreplaqu") && /okoume|okoumé/.test(n)) {
+    return "/wood/contreplaque-okoume.jpg";
+  }
+
+  for (const row of PRODUCT_NAME_IMAGE) {
+    for (const k of row.keys) {
+      if (n.includes(k)) {
+        if (row.softwood && !isSoftwood) continue;
+        const whiteWood = /epicea|épicéa|sapin|éphra/.test(n);
+        if (whiteWood && k !== "contreplaqu") return "/wood/bois-blanc.jpg";
+        return row.img;
+      }
+    }
+  }
+  return null;
+}
+
 export function productImage(product) {
-  if (product?.is_panel) return "/wood/plywood.jpg";
-  if (product?.category === "Panneaux & Dérivés") return "/wood/plywood.jpg";
+  const byName = detectPanelType(product);
+  if (byName) return byName;
+  if (product?.is_panel) return "/wood/contreplaque.jpg";
+  if (product?.category === "Panneaux & Dérivés") return "/wood/contreplaque.jpg";
   const essence = (product?.wood_type_name || "").toLowerCase();
   for (const [key, img] of Object.entries(ESSENCE_IMAGE)) {
     if (essence.includes(key)) return img;

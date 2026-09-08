@@ -92,6 +92,24 @@ Prêt en 30 secondes, une seule adresse à montrer : **http://127.0.0.1:8001**
   **⚠ Dépassement** si la charge dépasse la capacité, et aperçu du volume estimé
   dans le formulaire avant ouverture du cycle.
 
+### Facturation & Règlements (nouveau)
+- Entrée **🧾 Facturation** dans la barre latérale (admin uniquement).
+- **4 onglets** : Factures · Facturer des BL · Avoirs · Historique des paiements.
+- **Registre des factures** : résumé par statut (Réglée 🟢 / En attente d'échéance
+  🔵 / Partiellement réglée 🟡 / Non réglée / En retard 🔴), solde dû, BL attachés
+  et avoirs déjà déduits. Export CSV SAGE/Ciel filtrable par client / période / statut.
+- **Facturer des BL** : liste des bons de livraison livrés et non facturés →
+  cochez des BL, validez → facture mensuelle regroupée (`FC…`, TVA 20 %, net à payer
+  en chiffres **et en toutes lettres** en français).
+- **Avoirs** : créez un avoir lié à une facture d'origine (motif, m³, montant),
+  plafonné au solde de la facture ; le reste crédite automatiquement le client.
+- **Règlements** : enregistrez un paiement (montant, date, mode de règlement —
+  Chèque, Traite 30/60/90j, Virement, Espèces — banque, référence, échéance) ;
+  badge de statut mis à jour en direct.
+- **Relances** : WhatsApp (lien wa.me pré-rempli avec total TTC + échéance + RIB)
+  et e-mail (SMTP) directement depuis la ligne de facture.
+- Le même registre est consultable côté **Espace Pro** (`/pro/factures`).
+
 ### Remises par volume (nouveau)
 - Dans le **Calculateur**, entrez un gros volume (≥ 25 m³) → une puce **−5 % ·
   Tarif gros** apparaît sur le total, recalculé en direct via `/api/pricing/lookup/`.
@@ -114,10 +132,11 @@ Prêt en 30 secondes, une seule adresse à montrer : **http://127.0.0.1:8001**
 
 ```powershell
 cd backend
-python seed_demo.py
+python seed_demo.py          # inventaire + clients + ventes
+python seed_facturation_demo.py  # BL de démo, facture, avoir, règlement
 ```
 
-Idempotent : relancez-le sans risque.
+Idempotent : relancez-les sans risque.
 
 ## 4. En cas de problème
 

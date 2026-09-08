@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -165,3 +166,34 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 # Render terminates TLS at its proxy; honour its header so redirects stay https.
 if os.getenv("RENDER") or os.getenv("TRUST_PROXY_SSL") == "True":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# --------------------------------------------------------------------------
+# E-mail — used to notify the company when a client submits the contact /
+# quote (devis) forms via /api/public/leads/.
+#
+# Configure an SMTP account in backend/.env. Gmail example:
+#   EMAIL_HOST=smtp.gmail.com
+#   EMAIL_PORT=587
+#   EMAIL_HOST_USER=votre.adresse@gmail.com
+#   EMAIL_HOST_PASSWORD=<mot de passe d'application>
+#   EMAIL_USE_TLS=True
+#   EMAIL_USE_SSL=False
+#   EMAIL_FROM= <sender address; defaults to EMAIL_HOST_USER>
+#
+# If no SMTP host is set, the "console" backend is used so nothing crashes
+# during local development (the message is printed to the server console).
+# --------------------------------------------------------------------------
+if os.getenv("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "25"))
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "") == "True"
+    EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "") == "True"
+    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+    DEFAULT_FROM_EMAIL = os.getenv("EMAIL_FROM") or EMAIL_HOST_USER or "noreply@koudi.local"
+    EMAIL_SUBJECT_PREFIX = os.getenv("EMAIL_SUBJECT_PREFIX", "[KOUDI WOOD] ")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "noreply@koudi.local"

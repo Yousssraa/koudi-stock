@@ -7,19 +7,19 @@ const byKey = {
       {
         title: "Charpente & ossature",
         desc: "Madriers, bastaings et chevrons en pin sylvestre pour la charpente, l'ossature et la structure des bâtiments.",
-        img: "/wood/pin-sylvestre.jpg",
+        img: "/wood/madrier-charpente.jpg",
         tags: ["Charpente", "Ossature", "Structure"],
       },
       {
         title: "Terrasse extérieure",
         desc: "Lames de terrasse en pin traité autoclave : sols de terrasses, balcons et abords de piscine résistants.",
-        img: "/wood/pin-sylvestre.jpg",
+        img: "/wood/madrier-terrasse.webp",
         tags: ["Terrasse", "Extérieur"],
       },
       {
         title: "Menuiserie & coffrage",
         desc: "Voliges et planches de coffrage pour vos chantiers et vos travaux de menuiserie courante.",
-        img: "/wood/coffrage.jpg",
+        img: "/wood/madrier-menuiserie.webp",
         tags: ["Coffrage", "Menuiserie"],
       },
     ],
@@ -116,6 +116,29 @@ const byKey = {
       },
     ],
   },
+  "epicea": {
+    title: "Bastaings & Bois Blanc",
+    uses: [
+      {
+        title: "Charpente & ossature",
+        desc: "Bastaings, madriers et chevrons en épicéa pour la charpente, l'ossature et la structure des bâtiments.",
+        img: "/wood/epicea-charpente.jpg",
+        tags: ["Charpente", "Ossature", "Structure"],
+      },
+      {
+        title: "Menuiserie",
+        desc: "Ouvrages de menuiserie : meubles, agencements intérieurs, portes, fenêtres et mobilier sur mesure en épicéa.",
+        img: "/wood/exemple-menuiserie.jpg",
+        tags: ["Menuiserie", "Meubles", "Agencement"],
+      },
+      {
+        title: "Bricolage",
+        desc: "Idéal pour vos projets de bricolage : étagères, caisses, supports et petites réalisations en bois blanc.",
+        img: "/wood/bricolage.jpg",
+        tags: ["Bricolage", "Petits projets"],
+      },
+    ],
+  },
   "eucalyptus": {
     title: "Eucalyptus",
     uses: [
@@ -172,6 +195,196 @@ const pu = {
   },
 };
 
+// Exemples d'utilisation spécifiques par produit (SKU) — chaque produit de la
+// page d'accueil "Nouveautés & produits en stock" a ses propres usages, pour
+// éviter les doublons entre produits de même essence.
+const bySku = {
+  "PR-100-100-4000": {
+    title: "Madrier Pin — Structures",
+    uses: [
+      {
+        title: "Charpente & ossature",
+        desc: "Madrier résineux pour la charpente, l'ossature et la structure porteuse des bâtiments.",
+        img: "/wood/madrier-charpente.jpg",
+        tags: ["Charpente", "Ossature", "Structure"],
+      },
+      {
+        title: "Terrasse extérieure",
+        desc: "Assemblé en solivage et lambourdes, il porte les platelages de terrasses et de balcons.",
+        img: "/wood/madrier-terrasse.webp",
+        tags: ["Terrasse", "Extérieur"],
+      },
+      {
+        title: "Menuiserie & coffrage",
+        desc: "Section robuste pour coffrage béton, étaiements et gros ouvrages de menuiserie.",
+        img: "/wood/madrier-menuiserie.webp",
+        tags: ["Coffrage", "Menuiserie"],
+      },
+    ],
+  },
+  "EPC-063-225-4000": {
+    title: "Bastaing Épicéa",
+    uses: [
+      {
+        title: "Charpente & ossature",
+        desc: "Bastaing d'épicéa pour la charpente, l'ossature et la structure des bâtiments.",
+        img: "/wood/epicea-charpente.jpg",
+        tags: ["Charpente", "Ossature"],
+      },
+      {
+        title: "Solivage & planchers",
+        desc: "Porte les solives et planchers d'étage, mezzanines et zones de stockage.",
+        img: "/wood/bastaing-epicea.jpg",
+        tags: ["Solivage", "Plancher"],
+      },
+      {
+        title: "Menuiserie",
+        desc: "Ouvrages de menuiserie, mobilier sur mesure et aménagements intérieurs.",
+        img: "/wood/exemple-menuiserie.jpg",
+        tags: ["Menuiserie", "Meubles"],
+      },
+    ],
+  },
+  "PR-063-225-4000": {
+    title: "Bastaing Pin",
+    uses: [
+      {
+        title: "Solivage & planchers",
+        desc: "Bastaing en pin pour porter les planchers, mezzanines et ossatures robustes.",
+        img: "/wood/bastaing-solivage.jpg",
+        tags: ["Solivage", "Plancher"],
+      },
+      {
+        title: "Charpente",
+        desc: "Pannes, arbalétriers et pièces de charpente en pin résineux.",
+        img: "/wood/bastaing-charpente.webp",
+        tags: ["Charpente", "Structure"],
+      },
+      {
+        title: "Ossature & supports",
+        desc: "Supports, encadrements et ossatures pour aménagements extérieurs et intérieurs.",
+        img: "/wood/bastaing-ossature.webp",
+        tags: ["Ossature", "Support"],
+      },
+    ],
+  },
+  "EPC-063-175-4000": {
+    title: "Chevron Épicéa",
+    uses: [
+      {
+        title: "Toiture & pente",
+        desc: "Chevron léger pour la pose des versants et la couverture des toitures.",
+        img: "/wood/chevronepicea-toiture.webp",
+        tags: ["Toiture", "Pente"],
+      },
+      {
+        title: "Pannes & arbalétriers",
+        desc: "Panne intermédiaire et arbalétrier pour la charpente traditionnelle.",
+        img: "/wood/chevronepicea-pannes.webp",
+        tags: ["Pannes", "Arbalétriers"],
+      },
+      {
+        title: "Ossature légère",
+        desc: "Montants et ossatures légères pour cloisons et structures de faible portée.",
+        img: "/wood/chevronepicea-ossature.webp",
+        tags: ["Ossature", "Montants"],
+      },
+    ],
+  },
+  "PR-063-175-4000": {
+    title: "Chevron Pin",
+    uses: [
+      {
+        title: "Charpente de toiture",
+        desc: "Chevron en pin pour supporter la couverture et les versants de toiture.",
+        img: "/wood/chevronpin-charpente.webp",
+        tags: ["Toiture", "Charpente"],
+      },
+      {
+        title: "Pannes & supports",
+        desc: "Pièces de charpente intermédiaires, pannes et support de liteaux.",
+        img: "/wood/chevronpin-pannes.webp",
+        tags: ["Pannes", "Supports"],
+      },
+      {
+        title: "Ossature",
+        desc: "Ossature bois pour cloisons, extensions et structures légères en pin.",
+        img: "/wood/chevronpin-ossature.webp",
+        tags: ["Ossature", "Structure"],
+      },
+    ],
+  },
+  "EPC-027-040-3000": {
+    title: "Liteau Épicéa",
+    uses: [
+      {
+        title: "Support de tuiles",
+        desc: "Liteau fixé sur les chevrons pour recevoir tuiles, ardoises et couvertures.",
+        img: "/wood/liteauepicea-tuiles.webp",
+        tags: ["Toiture", "Tuiles"],
+      },
+      {
+        title: "Contre-lattage",
+        desc: "Contre-liteau et ventilation des toitures, isolation et habillage.",
+        img: "/wood/liteauepicea-lattage.webp",
+        tags: ["Contre-lattage", "Isolation"],
+      },
+      {
+        title: "Tasseaux & montants",
+        desc: "Tasseaux, montants et menuiseries légères pour aménagements intérieurs.",
+        img: "/wood/liteauepicea-tasseaux.webp",
+        tags: ["Tasseaux", "Montants"],
+      },
+    ],
+  },
+  "CFR-18-2500-1250": {
+    title: "Panneau de Coffrage",
+    uses: [
+      {
+        title: "Coffrage de béton",
+        desc: "Panneau filmé bakélisé pour le coffrage des voiles, dalles et fondations en béton.",
+        img: "/wood/coffrage-beton.webp",
+        tags: ["Coffrage", "Béton"],
+      },
+      {
+        title: "Coffrage de poteaux",
+        desc: "Coffrage des poteaux, poutres et escaliers avec un parement lisse et net.",
+        img: "/wood/coffrage-poteaux.webp",
+        tags: ["Poteaux", "Poutres"],
+      },
+      {
+        title: "Protection de chantier",
+        desc: "Cloisons provisoires, protections de sol et surfaces de travail réutilisables.",
+        img: "/wood/coffrage-protection.webp",
+        tags: ["Chantier", "Protection"],
+      },
+    ],
+  },
+  "CPO-15-2500-1220": {
+    title: "Contreplaqué Okoumé",
+    uses: [
+      {
+        title: "Menuiserie intérieure",
+        desc: "Contreplaqué d'okoumé pour meubles, caissons et ouvrages de menuiserie fine.",
+        img: "/wood/okoume-menuiserie.webp",
+        tags: ["Menuiserie", "Meubles"],
+      },
+      {
+        title: "Agencement",
+        desc: "Belles faces d'okoumé pour l'agencement de magasins et d'espaces intérieurs.",
+        img: "/wood/okoume-agencement.webp",
+        tags: ["Agencement", "Intérieur"],
+      },
+      {
+        title: "Caisses & emballages",
+        desc: "Panneau léger et stable pour caisses, emballages et aménagements légers.",
+        img: "/wood/okoume-caisses.jpg",
+        tags: ["Caisses", "Emballage"],
+      },
+    ],
+  },
+};
+
 function norm(s = "") {
   return s
     .toString()
@@ -180,8 +393,15 @@ function norm(s = "") {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-// Returns { title, uses[] } for a product (matched by essence, then category).
+// Return value = { title, uses[] } for a product.
+// Priority: per-product SKU -> essence -> category.
 export function usagesFor(product) {
+  const sku = norm(product?.sku || "");
+  if (sku) {
+    for (const [key, value] of Object.entries(bySku)) {
+      if (norm(key) === sku) return value;
+    }
+  }
   const essence = norm(product?.wood_type_name || "");
   for (const [key, value] of Object.entries(byKey)) {
     if (essence.includes(norm(key))) return value;

@@ -34,6 +34,9 @@ const DICT = {
     nav: {
       accueil: "Accueil",
       produits: "Nos Produits",
+      apropos: "À propos",
+      actualites: "Actualités",
+      equipe: "Notre Équipe",
       boutiques: "Boutique",
       devis: "Devis &amp; Devis rapide",
       contact: "Contact",
@@ -67,6 +70,9 @@ const DICT = {
     nav: {
       accueil: "Home",
       produits: "Our Products",
+      apropos: "About us",
+      actualites: "News",
+      equipe: "Our Team",
       boutiques: "Shop",
       devis: "Quote",
       contact: "Contact",

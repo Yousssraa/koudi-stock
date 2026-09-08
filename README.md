@@ -83,9 +83,12 @@ cd backend
 python manage.py test stock --keepdb -v 2
 ```
 
-17 regression tests cover the enterprise modules (landed cost & margins,
-client credit/payments/overdue, kiln drying, tier pricing and the discount
-line on the invoice PDF). A fresh test database needs the `maintain_inventory`
+38 regression tests cover the enterprise modules (landed cost & margins,
+client credit/payments/overdue, kiln drying, tier pricing, discount lines on
+the invoice PDF, and the facturation suite: BL grouping, avoirs, formal
+Moroccan payments with échéances, settlement badges, French words
+`amount_in_words` and the invoice register API). A fresh test database needs
+the `maintain_inventory`
 trigger — it is installed by migration `0005_maintain_inventory_trigger`
 (idempotent `CREATE OR REPLACE FUNCTION` + `DROP TRIGGER IF EXISTS`). Use
 `--keepdb` so Supabase skips the `DROP DATABASE` teardown (the hosting role may
@@ -233,6 +236,11 @@ Volume (m³) = (Thickness_mm × Width_mm × Length_mm × Quantity) / 1,000,000,0
 - Samples **PDF documents** generated server-side with ReportLab:
   - **Facture** & **Devis** per sale order (client, dépôt, lignes m³, PU MAD/m³,
     sous-total HT, TVA 20%, total TTC) — downloadable from the Transactions page
+  - **Facture d'Avoir** (`build_credit_note_pdf`) — crédit client à partir d'une
+    facture d'origine (motif, m³, montant appliqué), TVA 20 %, légalisée
+  - **Factures de regroupement** (page **Facturation**) — consolident plusieurs
+    bons de livraison livrés en une facture mensuelle, avec la TVA 20 % et le
+    net à payer en toutes lettres calculés à l'impression
   - **QR bundle labels** per product/batch (payload: `KOUDI|SKU|dims|m³|dépôt`),
     printed on an A4 3×4 grid from the Inventory page
 - **Reorder thresholds** (`reorder_threshold_m3` on each product, in m³): the
@@ -268,6 +276,22 @@ Volume (m³) = (Thickness_mm × Width_mm × Length_mm × Quantity) / 1,000,000,0
 - **Audit trail** (`/api/audit/`, admin-only): full traceability of logins,
   product/stock/order changes, document downloads, transfers, reorders and
   month closes — browsable page at `/audit`, gated on the current user's role
+- **Facturation marocaine** (page **`/app/facturation`**, admin-only): les bons de
+  livraison livrés et non facturés peuvent être **regroupés** en une facture
+  mensuelle nommée (`FC…`, TVA 20 % calculée à l'impression, net à payer en
+  chiffres **et en toutes lettres** en français). Le **registre des factures**
+  (`/api/invoices/`) expose par facture le statut de règlement (badges `Réglée`
+  / `En attente d'échéance` / `Partiellement réglée` / `Non réglée` / `En retard`),
+  le solde dû, les BL attachés et les **avoirs** déjà déduits, avec un résumé
+  comptable par statut. Les **moyens de paiement formels** (chèque, traite 30/60/90j,
+  virement, espèces) portent banque, référence et **date d'échéance** ; un règlement
+  couvrant la facture centime à centime est marqué *En attente d'échéance* tant que
+  le chèque/traite n'est pas échu (tolérance d'un centime). Les **factures d'avoir**
+  sont liées à la facture d'origine, plafonnées à son solde (le reste crédite le
+  client), réduisent l'encours et réimpriment en A4 légal. **Relances** WhatsApp
+  (lien wa.me pré-rempli avec total TTC, échéance et RIB) et **e-mail** (SMTP),
+  **export comptable CSV** SAGE/Ciel filtrable par client/période/statut — le tout
+  aussi consultable côté **Espace Pro** (`/pro/factures`) avec les PDF officiels.
 - Multi-warehouse (Dépôt Casablanca / Dépôt Tanger) with inter-warehouse **transfers**
 - Stock status badges: In Stock / Low Stock / Out of Stock (driven by `min_stock_qty`)
 

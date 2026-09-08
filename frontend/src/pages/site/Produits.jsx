@@ -192,7 +192,7 @@ export default function Produits() {
                         to={`/produit/${p.id}`}
                         className="block"
                       >
-                        <div className="relative h-32 overflow-hidden sm:h-36">
+                        <div className="relative h-24 overflow-hidden sm:h-28">
                           <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                           {p.stock_status === "out_of_stock" && (
                             <span className="absolute left-2 top-2 rounded-full bg-rose px-2 py-0.5 text-[10px] font-semibold text-ink">
@@ -206,18 +206,18 @@ export default function Produits() {
                           )}
                         </div>
                       </Link>
-                      <div className="p-2.5 sm:p-3">
+                      <div className="p-2 sm:p-2.5">
                         <Link to={`/produit/${p.id}`} className="block">
-                          <h3 className="font-display truncate text-sm font-bold text-frost transition group-hover:text-amber">{p.name}</h3>
-                          <p className="truncate text-xs text-dim">{p.wood_type_name || p.category}</p>
-                          {p.piece_type && <p className="mt-1 truncate text-[11px] text-ash">{p.piece_type}{p.treatment ? ` · ${p.treatment}` : ""}</p>}
-                          <p className="mt-1.5 font-semibold text-amber">
+                          <h3 className="font-display truncate text-xs font-bold text-frost transition group-hover:text-amber">{p.name}</h3>
+                          <p className="truncate text-[11px] text-dim">{p.wood_type_name || p.category}</p>
+                          {p.piece_type && <p className="mt-0.5 truncate text-[10px] text-ash">{p.piece_type}{p.treatment ? ` · ${p.treatment}` : ""}</p>}
+                          <p className="mt-1 text-xs font-semibold text-amber">
                             {fmtPrice(p.sale_price)} {t.common.mad} <span className="font-normal text-dim">/ {t.common.perM3}</span>
                           </p>
                         </Link>
                         <Link
                           to={`/produit/${p.id}`}
-                          className="mt-3 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber to-copper px-3 py-2 text-xs font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+                          className="mt-2.5 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber to-copper px-2.5 py-1.5 text-[11px] font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
                         >
                           Découvrir →
                         </Link>

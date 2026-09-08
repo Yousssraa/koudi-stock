@@ -17,7 +17,6 @@ export default function Produit() {
   const { id } = useParams();
   const t = useT();
   const [p, setP] = useState(null);
-  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,17 +31,6 @@ export default function Produit() {
       .then((r) => {
         setP(r.data);
         document.title = `${r.data.name} — KOUDI WOOD`;
-        return r.data;
-      })
-      .then((product) => {
-        if (!product?.wood_type_name) return;
-        return api
-          .get(`/public/products/?species=${encodeURIComponent(product.wood_type_name)}`)
-          .then((rr) =>
-            setRelated(
-              (rr.data || []).filter((x) => Number(x.id) !== Number(product.id)).slice(0, 4)
-            )
-          );
       })
       .catch((e) => setError(e.response?.data?.detail || "Produit introuvable."))
       .finally(() => setLoading(false));
@@ -108,7 +96,7 @@ export default function Produit() {
       <div className="mx-auto max-w-6xl px-4 py-12 lg:px-6">
         <div className="overflow-hidden rounded-2xl bg-panel shadow-xl shadow-black/10 ring-1 ring-line">
           <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
-            <div className="relative h-72 lg:h-full lg:min-h-[420px]">
+            <div className="relative h-56 lg:h-full lg:min-h-[300px]">
               <img src={productImage(p)} alt={p.name} className="h-full w-full object-cover" />
               {p.stock_status === "out_of_stock" && (
                 <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-xs font-semibold text-ink">{t.common.outOfStock}</span>
@@ -118,14 +106,17 @@ export default function Produit() {
               )}
             </div>
 
-            <div className="flex flex-col p-8 lg:p-10">
+            <div className="flex flex-col p-6 lg:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">{CATEGORY_COPY[p.category] || p.category}</p>
               <h2 className="font-display mt-2 text-3xl font-extrabold text-frost">{p.name}</h2>
               <p className="mt-1 text-sm text-dim">Réf. {p.sku}</p>
+              {p.description && (
+                <p className="mt-4 text-sm leading-relaxed text-ash">{p.description}</p>
+              )}
 
-              <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
+              <dl className="mt-5 grid grid-cols-2 gap-2.5 text-xs">
                 {specRows.map((r) => (
-                  <div key={r.label} className="rounded-xl bg-raise/60 p-3">
+                  <div key={r.label} className="rounded-md bg-raise/60 p-2">
                     <dt className="text-dim">{r.label}</dt>
                     <dd className="font-semibold text-frost">{r.value}</dd>
                   </div>
@@ -190,32 +181,6 @@ export default function Produit() {
             ))}
           </div>
         </section>
-
-        {/* Related products — same essence */}
-        {related.length > 0 && (
-          <section className="mt-14">
-            <h2 className="font-display mb-6 text-2xl font-bold tracking-tight text-frost">
-              Plus de produits en {p.wood_type_name}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-              {related.map((r) => (
-                <Link
-                  key={r.id}
-                  to={`/produit/${r.id}`}
-                  className="group overflow-hidden rounded-lg bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5"
-                >
-                  <div className="relative h-28 overflow-hidden sm:h-32">
-                    <img src={productImage(r)} alt={r.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="space-y-0.5 p-2.5 sm:p-3">
-                    <h3 className="font-display truncate text-sm font-bold text-frost">{r.name}</h3>
-                    <p className="truncate text-xs text-dim">{r.dimensions_display || r.wood_type_name}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );

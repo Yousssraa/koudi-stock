@@ -10,6 +10,11 @@ const fmt = (n, digits = 2) =>
     ? "—"
     : Number(n).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
+const fmtMAD = (n) =>
+  n === null || n === undefined || isNaN(n)
+    ? "—"
+    : Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 const TYPE_META = {
   purchase_in: { label: "Achat", color: "text-jade bg-jade/10 ring-jade/30" },
   sale_out: { label: "Vente", color: "text-rose bg-rose/10 ring-rose/30" },
@@ -22,6 +27,31 @@ const TYPE_META = {
 };
 
 const SPECIES_COLORS = ["#b85b14", "#2b4f3c", "#d97a2b", "#16291f", "#8a4d14", "#4a7a5f", "#c9884a", "#1e3a2b"];
+
+const ACTION_LABELS = {
+  create: "a créé",
+  update: "a modifié",
+  delete: "a supprimé",
+  price_update: "a mis à jour le prix de",
+  login: "s'est connecté",
+  logout: "s'est déconnecté",
+  download: "a téléchargé",
+  reorder: "a généré une commande pour",
+  transfer: "a transféré",
+  close_month: "a clôturé le mois",
+};
+
+const ENTITY_LABELS = {
+  delivery_note: "le BL",
+  product: "le produit",
+  reference_price: "le tarif",
+  purchase_order: "le bon d'achat",
+  sales_order: "la commande",
+  client: "le client",
+  supplier: "le fournisseur",
+  stock_movement: "le mouvement",
+  company_profile: "le profil société",
+};
 
 function SectionTitle({ children, right }) {
   return (
@@ -85,11 +115,32 @@ export default function Dashboard() {
   }
 
   const maxSpecies = Math.max(...data.species_volume.map((s) => s.volume_m3), 0.0001);
-  const maxMovement = Math.max(...data.movement_series.flatMap((d) => [d.in_m3, d.out_m3]), 0.0001);
-  const movementTotal = data.movement_series.reduce(
+
+  // Month-over-month stock delta from the last two months of the flow series.
+  const flow = data.monthly_flow_series || [];
+  const lastMonth = flow[flow.length - 1];
+  const prevMonth = flow[flow.length - 2];
+  let stockDelta = null;
+  if (lastMonth && prevMonth) {
+    const cur = lastMonth.in_m3 - lastMonth.out_m3;
+    const prev = prevMonth.in_m3 - prevMonth.out_m3;
+    if (prev !== 0) {
+      const pct = ((cur - prev) / Math.abs(prev)) * 100;
+      stockDelta = {
+        text: `${Math.abs(pct).toFixed(1)}% ce mois`,
+        positive: pct >= 0,
+        icon: pct >= 0 ? "▲" : "▼",
+      };
+    }
+  }
+
+  const maxFlow = Math.max(...flow.flatMap((d) => [d.in_m3, d.out_m3]), 0.0001);
+  const flowTotal = flow.reduce(
     (acc, d) => ({ in: acc.in + d.in_m3, out: acc.out + d.out_m3 }),
     { in: 0, out: 0 }
   );
+
+  const activity = data.activity_feed || [];
 
   return (
     <div>
@@ -161,81 +212,94 @@ export default function Dashboard() {
         <SectionTitle>Indicateurs</SectionTitle>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title="Volume Total"
-            value={`${fmt(data.total_volume_m3, 3)} m³`}
+            title="Stock Total"
+            value={`${fmt(data.total_volume_m3, 2)} m³`}
             sub={`${data.product_count} produits actifs`}
+            delta={stockDelta}
             icon="▧"
             accent="amber"
           />
           <MetricCard
-            title="Valeur du Stock"
-            value={`${fmt(data.stock_value)} MAD`}
-            sub="au coût par m³"
+            title="Valeur Globale du Stock"
+            value={`${fmtMAD(data.stock_value_sale ?? data.stock_value)} MAD`}
+            sub="au prix de vente / m³"
             icon="◪"
-            accent="amber"
+            accent="jade"
           />
           <MetricCard
-            title="Livraisons Aujourd'hui"
-            value={data.shipments_today}
-            sub={`${data.shipments_in_prep} en préparation`}
-            icon="🚚"
-            accent={data.shipments_today ? "amber" : "jade"}
+            title="Entrées Dépôt (Mois)"
+            value={`${fmt(data.stock_in_month_m3 ?? 0, 2)} m³`}
+            sub="achats & retours reçus ce mois"
+            icon="▣"
+            accent="sky"
           />
           <MetricCard
             title="Alertes Stock Bas"
             value={data.low_stock_count}
-            sub={data.low_stock_count ? "produits à réapprovisionner" : "tout est bien approvisionné"}
+            sub={data.low_stock_count ? "références à réapprovisionner" : "tout est bien approvisionné"}
+            delta={data.low_stock_count ? { text: "à traiter", positive: false } : null}
             icon="!"
-            accent={data.low_stock_count ? "amber" : "jade"}
+            accent={data.low_stock_count ? "rose" : "jade"}
           />
         </div>
       </section>
 
-      {/* Section 2 — Analyse */}
+      {/* Section 2 — Analyse : flux mensuel + répartition */}
       <section aria-label="Analyse" className="mt-8">
-        <SectionTitle>Analyse</SectionTitle>
+        <SectionTitle>Analyse — Flux de bois (m³)</SectionTitle>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Card
-            title="Mouvements — Entrées / Sorties (14 jours)"
+            title="Volume Entré vs Livré (6 derniers mois)"
             className="lg:col-span-3"
             right={<span className="text-xs text-dim">m³</span>}
           >
             <div className="flex items-start justify-between gap-2 text-xs">
               <span className="flex items-center gap-1.5 text-jade">
-                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-jade/40 to-jade" /> Entrées
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-jade/40 to-jade" /> Entré
               </span>
               <span className="flex items-center gap-1.5 text-rose">
-                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-rose/40 to-rose" /> Sorties
+                <span className="h-2.5 w-2.5 rounded-sm bg-gradient-to-t from-rose/40 to-rose" /> Livré
               </span>
               <span className="text-dim">
-                +{fmt(movementTotal.in, 2)} / −{fmt(movementTotal.out, 2)} m³
+                +{fmt(flowTotal.in, 2)} / −{fmt(flowTotal.out, 2)} m³
               </span>
             </div>
-            <div className="mt-4 flex h-52 items-end gap-1.5">
-              {data.movement_series.map((d) => (
-                <div key={d.day} className="group flex flex-1 flex-col items-center gap-1.5">
-                  <div className="relative flex w-full flex-1 flex-col justify-end gap-0.5">
-                    <div
-                      className="w-full rounded-t bg-rose/80 transition-all group-hover:bg-rose"
-                      style={{ height: `${Math.max((d.out_m3 / maxMovement) * 50, 1)}%` }}
-                      title={`${d.label} — sorties ${fmt(d.out_m3, 3)} m³`}
-                    />
-                    <div
-                      className="w-full rounded-t bg-gradient-to-t from-jade/40 to-jade transition-all group-hover:brightness-110"
-                      style={{ height: `${Math.max((d.in_m3 / maxMovement) * 50, 1)}%` }}
-                      title={`${d.label} — entrées ${fmt(d.in_m3, 3)} m³`}
-                    />
-                  </div>
-                  <span className="text-[10px] font-medium text-dim">{d.label}</span>
-                </div>
-              ))}
-            </div>
-            {movementTotal.in === 0 && movementTotal.out === 0 && (
-              <p className="mt-3 text-center text-xs text-dim">Aucun mouvement de stock sur les 14 derniers jours.</p>
+            {flow.length === 0 ? (
+              <p className="mt-3 text-center text-sm text-dim">Aucun mouvement sur les 6 derniers mois.</p>
+            ) : (
+              <div className="mt-4 flex h-52 items-end gap-2">
+                {flow.map((d) => {
+                  const groupMax = Math.max(d.in_m3, d.out_m3, 0.0001);
+                  return (
+                    <div key={d.key} className="group flex flex-1 flex-col items-center gap-1.5">
+                      <div className="relative flex w-full items-end justify-center gap-0.5">
+                        <div
+                          className="w-1/3 rounded-t bg-gradient-to-t from-jade/40 to-jade transition-all group-hover:brightness-110"
+                          style={{ height: `${(d.in_m3 / maxFlow) * 100}%` }}
+                          title={`${d.month} — entré ${fmt(d.in_m3, 3)} m³`}
+                        />
+                        <div
+                          className="w-1/3 rounded-t bg-gradient-to-t from-rose/40 to-rose transition-all group-hover:brightness-110"
+                          style={{ height: `${(d.out_m3 / maxFlow) * 100}%` }}
+                          title={`${d.month} — livré ${fmt(d.out_m3, 3)} m³`}
+                        />
+                      </div>
+                      <span className="text-[10px] font-medium text-dim">{d.month}</span>
+                      <span className="text-[9px] tabular-nums text-ash">
+                        {groupMax > 0 ? `${fmt(groupMax, 1)}` : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </Card>
 
-          <Card title="Volume par Essence" className="lg:col-span-2" right={<span className="text-xs text-dim">m³</span>}>
+          <Card
+            title="Répartition du Stock par Essence"
+            className="lg:col-span-2"
+            right={<span className="text-xs text-dim">m³</span>}
+          >
             {data.species_volume.length === 0 ? (
               <p className="text-sm text-dim">Aucune donnée.</p>
             ) : (
@@ -244,7 +308,7 @@ export default function Dashboard() {
                   <div key={s.name}>
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span className="font-medium text-frost">{s.name}</span>
-                      <span className="font-semibold text-ash">{fmt(s.volume_m3, 3)}</span>
+                      <span className="font-semibold text-ash">{fmt(s.volume_m3, 3)} m³</span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-raise">
                       <div
@@ -260,32 +324,49 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Section 3 — Stocks & activité */}
-      <section aria-label="Stocks et activité" className="mt-8">
-        <SectionTitle>Stocks &amp; Activité</SectionTitle>
+      {/* Section 3 — Activité & stocks */}
+      <section aria-label="Activité récente" className="mt-8">
+        <SectionTitle>Activité Récente</SectionTitle>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Card
-            title="Top Produits (volume m³)"
+            title="Flux d'Activité"
             className="lg:col-span-2"
-            right={<span className="text-xs text-dim">tous dépôts</span>}
+            right={<span className="text-xs text-dim">en direct</span>}
           >
-            {data.top_products.length === 0 ? (
-              <p className="text-sm text-dim">Aucun stock enregistré.</p>
+            {activity.length === 0 ? (
+              <p className="py-6 text-center text-sm text-dim">Aucune activité récente.</p>
             ) : (
-              <div className="divide-y divide-line">
-                {data.top_products.map((p, i) => (
-                  <div key={p.id} className="flex items-center gap-3 py-2.5">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber/10 text-xs font-bold text-amber ring-1 ring-amber/20">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-frost">{p.name}</p>
-                      <p className="font-mono text-[11px] text-dim">{p.sku}</p>
-                    </div>
-                    <span className="font-semibold text-amber">{fmt(p.volume_m3, 3)} m³</span>
-                  </div>
-                ))}
-              </div>
+              <ol className="relative space-y-4 border-l border-line pl-5">
+                {activity.map((a) => {
+                  const verb = ACTION_LABELS[a.action] || a.action;
+                  const obj = ENTITY_LABELS[a.entity_type] || a.entity_type;
+                  const ref = a.entity_ref || a.entity_id || "";
+                  return (
+                    <li key={a.id} className="relative">
+                      <span
+                        className={`absolute -left-[26px] top-1 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-panel ${
+                          a.action === "delete" || a.action === "price_update"
+                            ? "bg-rose"
+                            : a.action === "create"
+                            ? "bg-jade"
+                            : "bg-amber"
+                        }`}
+                      />
+                      <p className="text-sm text-frost">
+                        {a.user ? (
+                          <span className="font-semibold">{a.user}</span>
+                        ) : (
+                          <span className="italic text-dim">Système</span>
+                        )}{" "}
+                        <span className="text-ash">{verb}</span>{" "}
+                        <span className="font-semibold text-amber">{obj}</span>
+                        {ref ? <span className="font-mono text-xs text-ash"> {ref}</span> : null}
+                      </p>
+                      <p className="text-[11px] text-dim">{a.created_at}</p>
+                    </li>
+                  );
+                })}
+              </ol>
             )}
           </Card>
 

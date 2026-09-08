@@ -54,20 +54,56 @@ def compute_surface_m2(quantity=1):
 # ---------------------------------------------------------------------------
 # Reference tables
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Reference tables
+# ---------------------------------------------------------------------------
 class WoodType(models.Model):
-    """Volume: species / essence (Oak, Beech, Ash, Pine, Mahogany, Teak...)."""
+    """Volume: species / essence (Oak, Beech, Ash, Pine, Mahogany, Teak...).
+
+    Enriched for the public "fiche essence" (species data sheet): provenances
+    (origins), moisture behaviour and durability class (NF EN 350), usages and
+    the Comarbois umbrella family (Menuiserie & Agencement, Panneaux,
+    Aménagement Int./Ext., Produits métallurgiques).
+    """
 
     class Category(models.TextChoices):
         HARDWOOD = "Hardwood"
         SOFTWOOD = "Softwood"
         EXOTIC = "Exotic"
 
+    class ComarboisFamily(models.TextChoices):
+        MENUISERIE_AGENCEMENT = "Menuiserie & Agencement"
+        PANNEAUX = "Panneaux"
+        AMENAGEMENT_INT_EXT = "Aménagement Int./Ext."
+        METALLURGIQUE = "Produits métallurgiques"
+
     name = models.TextField(unique=True)
     scientific_name = models.TextField(blank=True, null=True)
+    common_names = models.TextField(
+        blank=True, null=True,
+        help_text="Noms usuels / synonymes (ex: Pin rouge / Sylvestre, Teck d'Afrique pour l'Iroko).",
+    )
     category = models.TextField(
         blank=True, null=True, choices=Category.choices, db_index=True
     )
+    comarbois_family = models.TextField(
+        blank=True, null=True, choices=ComarboisFamily.choices, db_index=True,
+        help_text="Famille du catalogue (style Comarbois) : Menuiserie & Agencement, "
+                  "Panneaux, Aménagement Int./Ext., Produits métallurgiques.",
+    )
     density_kg_m3 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    provenances = models.TextField(
+        blank=True, null=True,
+        help_text="Provenances / pays d'origine (ex: Scandinavie, Russie, Afrique Centrale, France).",
+    )
+    durability_class = models.TextField(
+        blank=True, null=True,
+        help_text="Classe de durabilité naturelle du duramen (NF EN 350) : 1 à 5 (1 = très durable).",
+    )
+    moisture_note = models.TextField(
+        blank=True, null=True,
+        help_text="Comportement à l'humidité / séchage (ex: séchage lent, retrait moyen).",
+    )
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -79,6 +115,10 @@ class WoodType(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def common_names_list(self):
+        return [x.strip() for x in (self.common_names or "").split(",") if x.strip()]
 
 
 class Warehouse(models.Model):
@@ -148,6 +188,10 @@ class Product(models.Model):
 
     sku = models.TextField(unique=True)
     name = models.TextField()
+    description = models.TextField(
+        blank=True, null=True,
+        help_text="Paragraphe « description produit » affiché sur la fiche publique.",
+    )
     colis_number = models.TextField(
         blank=True, null=True,
         help_text="Référence / numéro du colis ou fardeau (Colis/Fardeau Ref).",
@@ -251,6 +295,71 @@ class Product(models.Model):
         if threshold is None or threshold <= 0:
             return False
         return self.stock_volume_m3 < threshold
+
+
+# ---------------------------------------------------------------------------
+# Master data — reference pricing per m³ (essences & sheet materials)
+# ---------------------------------------------------------------------------
+class ReferencePrice(models.Model):
+    """Reference (list) price per m³ / m² for a wood essence or sheet material.
+
+    This is the "grille de prix" the sales team works from: one row per
+    essence (optionally narrowed by piece type, treatment and category). The
+    price is stored per unit (per m³ for timber / per plate or m² for panels)
+    and can be overridden at the product level via ``Product.sale_price``.
+
+    All rows are active by default; the vector is editable from the admin /
+    back-office so price lists per essence can be maintained dynamically.
+    """
+
+    class Target(models.TextChoices):
+        TIMBER = "timber"          # bois massif — prix au m³
+        PANEL = "panel"            # panneaux / dérivés — prix à l'unité ou au m²
+
+    wood_type = models.ForeignKey(
+        WoodType, on_delete=models.CASCADE, null=True, blank=True, db_index=True,
+        related_name="reference_prices",
+        help_text="Essence liée (facultatif : laisser vide pour une matière non-attachée à une essence).",
+    )
+    category = models.TextField(
+        blank=True, null=True, choices=Product.Category.choices, db_index=True,
+        help_text="Catégorie produit éligible (facultatif — grille générique si vide).",
+    )
+    piece_type = models.TextField(
+        blank=True, null=True, db_index=True,
+        help_text="Type de pièce éligible (Madrier, Basting, Chevron…). Vide = toutes pièces.",
+    )
+    treatment = models.TextField(
+        blank=True, null=True, db_index=True,
+        help_text="Classe de traitement éligible (Autoclave, Séché KD…). Vide = tous traitements.",
+    )
+    target = models.TextField(choices=Target.choices, default=Target.TIMBER, db_index=True)
+    unit_price_mad = models.DecimalField(
+        max_digits=14, decimal_places=4, default=Decimal("0"),
+        help_text="Prix de référence de la grille (MAD).",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "reference_prices"
+        ordering = ["wood_type__name", "category", "piece_type"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(unit_price_mad__gte=0), name="reference_prices_price_nonneg"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["wood_type", "category", "piece_type", "treatment"]),
+        ]
+
+    def __str__(self):
+        who = self.wood_type.name if self.wood_type else "Matière"
+        scope = (
+            f"{self.category or ''} / {self.piece_type or ''} / {self.treatment or ''}"
+        ).strip(" /")
+        return f"{who} {scope} — {self.unit_price_mad} MAD"
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +496,21 @@ class Payment(models.Model):
     ``sales_order`` is optional (deposit / acompte on a client account). The
     outstanding balance of a client is the sum of its shipped/delivered sales
     orders minus the payments recorded here.
+
+    Moroccan wholesale tracking: ``method_key`` is the formalised payment
+    instrument (Chèque, Traite 30/60/90j, Virement, Espèces), ``bank_name`` the
+    collecting bank (Attijariwafa, BCP, BOA, BMCI, CDM…) and ``due_date`` the
+    expected encaissement date (échéance) for chèques / traites.
     """
+
+    class Method(models.TextChoices):
+        CHEQUE = "cheque", "Chèque"
+        TRAITE_30 = "traite_30", "Traite bancaire 30 jours"
+        TRAITE_60 = "traite_60", "Traite bancaire 60 jours"
+        TRAITE_90 = "traite_90", "Traite bancaire 90 jours"
+        VIREMENT = "virement", "Virement bancaire"
+        ESPECES = "especes", "Espèces"
+        AUTRE = "autre", "Autre moyen"
 
     client = models.ForeignKey(Client, on_delete=models.CASCADE, db_index=True)
     sales_order = models.ForeignKey(
@@ -400,8 +523,13 @@ class Payment(models.Model):
     )
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     payment_date = models.DateField(db_index=True)
-    method = models.TextField(blank=True, null=True)  # virement / chèque / espèces…
+    method = models.TextField(blank=True, null=True)  # legacy / free-text label
+    method_key = models.TextField(
+        choices=Method.choices, default=Method.AUTRE, db_index=True
+    )
+    bank_name = models.TextField(blank=True, null=True)
     reference = models.TextField(blank=True, null=True)
+    due_date = models.DateField(null=True, blank=True, db_index=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -415,11 +543,15 @@ class Payment(models.Model):
             ),
         ]
 
-    def __str__(self):
-        return f"PAY-{self.pk} {self.client.code} {self.amount} MAD"
+    @property
+    def method_label(self):
+        """French label: formalised instrument, falling back to the legacy text."""
+        if self.method_key and self.method_key != self.Method.AUTRE:
+            return dict(self.Method.choices).get(self.method_key)
+        return (self.method or "").strip() or dict(self.Method.choices)[self.Method.AUTRE]
 
     def __str__(self):
-        return self.company_name
+        return f"PAY-{self.pk} {self.client.code} {self.amount} MAD"
 
 
 # ---------------------------------------------------------------------------
@@ -535,8 +667,16 @@ class SalesOrder(models.Model):
         return total
 
     @property
+    def applied_avoir(self):
+        """Credit notes (Factures d'Avoir) already deducted from this invoice."""
+        total = Decimal("0")
+        for cn in self.credit_notes.all():
+            total += cn.applied_amount or Decimal("0")
+        return total
+
+    @property
     def balance_due(self):
-        return self.total_amount - self.paid_amount
+        return self.total_amount - self.paid_amount - self.applied_avoir
 
 
 class SalesOrderItem(models.Model):
@@ -865,6 +1005,10 @@ class DeliveryNote(models.Model):
         PREPARATION = "preparation"   # En préparation
         IN_TRANSIT = "in_transit"     # En cours
         DELIVERED = "delivered"       # Livré
+        WAITING = "waiting"           # En attente
+        VALIDATED = "validated"       # Validé & Chargé
+        INVOICED = "invoiced"         # Facturé
+        CANCELLED = "cancelled"       # Annulé
 
     bl_number = models.TextField(unique=True)
     client = models.ForeignKey(Client, on_delete=models.PROTECT, db_index=True)
@@ -873,6 +1017,15 @@ class DeliveryNote(models.Model):
     truck_plate = models.TextField(blank=True, null=True)
     status = models.TextField(
         default=Status.PREPARATION, choices=Status.choices, db_index=True
+    )
+    invoice = models.ForeignKey(
+        "SalesOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_index=True,
+        related_name="delivery_notes",
+        help_text="Facture de regroupement (Facturation groupée) à laquelle ce BL est rattaché.",
     )
     order_date = models.DateField(auto_now_add=True)
     shipped_at = models.DateTimeField(null=True, blank=True)
@@ -934,6 +1087,81 @@ class DeliveryNoteItem(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# Facturation — Facture d'Avoir (credit notes)
+# ---------------------------------------------------------------------------
+class CreditNote(models.Model):
+    """A credit note (Facture d'Avoir) reducing what a client owes.
+
+    Emitted when a wood batch is returned or the invoiced volume (m³) is
+    corrected. ``applied_amount`` is the part deducted from the linked invoice
+    balance (capped at its current balance); any remainder offsets the client's
+    global encours. Creating an Avoir therefore updates the client's receivable
+    position automatically (``SalesOrder.balance_due`` and
+    ``services.client_credit_summary`` both account for it).
+    """
+
+    class Reason(models.TextChoices):
+        RETURN = "return", "Retour de marchandise"
+        VOLUME_CORRECTION = "volume_correction", "Correction de volume (m³)"
+        COMMERCIAL = "commercial", "Avoir commercial"
+
+    credit_note_number = models.TextField(unique=True)
+    client = models.ForeignKey(
+        Client, on_delete=models.PROTECT, related_name="credit_notes", db_index=True
+    )
+    sales_order = models.ForeignKey(
+        "SalesOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="credit_notes",
+        db_index=True,
+        help_text="Facture d'origine à laquelle l'avoir se rattache.",
+    )
+    delivery_note = models.ForeignKey(
+        DeliveryNote,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="credit_notes",
+        db_index=True,
+    )
+    reason = models.TextField(
+        choices=Reason.choices, default=Reason.RETURN, db_index=True
+    )
+    volume_m3 = models.DecimalField(
+        max_digits=14, decimal_places=4, null=True, blank=True,
+        help_text="Volume corrigé / retourné (m³) le cas échéant.",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)  # Montant HT
+    applied_amount = models.DecimalField(
+        max_digits=14, decimal_places=2, default=Decimal("0"),
+        help_text="Part de l'avoir déduite du solde de la facture d'origine.",
+    )
+    notes = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_date = models.DateField(auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "credit_notes"
+        ordering = ["-created_date", "-id"]
+
+    @property
+    def amount_ttc(self):
+        return (Decimal(str(self.amount)) * Decimal("1.20")).quantize(Decimal("0.01"))
+
+    @property
+    def reason_label(self):
+        return dict(self.Reason.choices).get(self.reason)
+
+    def __str__(self):
+        return self.credit_note_number
+
+
+# ---------------------------------------------------------------------------
 # Public vitrine — Devis / Contact lead captures
 # ---------------------------------------------------------------------------
 class Lead(models.Model):
@@ -968,3 +1196,260 @@ class Lead(models.Model):
 
     def __str__(self):
         return f"{self.kind} — {self.name} ({self.email})"
+
+
+# ---------------------------------------------------------------------------
+# Espace Pro — Client portal models
+# ---------------------------------------------------------------------------
+class ClientUser(models.Model):
+    """Links a Django auth User to a Client for the professional portal.
+
+    Each client company can have one or more login accounts. ``is_primary``
+    marks the account holder (the one who manages the company's portal access).
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="client_profile",
+        db_index=True,
+    )
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name="users",
+        db_index=True,
+    )
+    is_primary = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "client_users"
+        constraints = [
+            models.UniqueConstraint(fields=["user"], name="client_users_user_key"),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} → {self.client.code}"
+
+
+class Quote(models.Model):
+    """A quote / devis created by a client through the Espace Pro portal.
+
+    Status lifecycle: draft → sent → accepted | rejected | expired.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "draft"
+        SENT = "sent"
+        ACCEPTED = "accepted"
+        REJECTED = "rejected"
+        EXPIRED = "expired"
+
+    quote_number = models.TextField(unique=True)
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE, db_index=True, related_name="quotes"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_index=True,
+    )
+    status = models.TextField(
+        default=Status.DRAFT, choices=Status.choices, db_index=True
+    )
+    subtotal = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    tax_amount = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    total_amount = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    currency = models.TextField(default="MAD")
+    notes = models.TextField(blank=True, null=True)
+    valid_until = models.DateField(null=True, blank=True)
+    delivery_address = models.TextField(
+        blank=True, null=True,
+        help_text="Destination de livraison souhaitée (chantier, dépôt client…).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "quotes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.quote_number
+
+
+class QuoteItem(models.Model):
+    """One line of a quote / devis."""
+
+    quote = models.ForeignKey(
+        Quote, on_delete=models.CASCADE, related_name="items", db_index=True
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, db_index=True
+    )
+    quantity = models.DecimalField(max_digits=14, decimal_places=4)
+    unit_price = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    line_total = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = "quote_items"
+
+    def __str__(self):
+        return f"{self.quote} - {self.product}"
+
+
+class ClientNotification(models.Model):
+    """Notifications for client portal users (quote status, delivery updates, etc.)."""
+
+    class Kind(models.TextChoices):
+        QUOTE_UPDATE = "quote_update"
+        ORDER_UPDATE = "order_update"
+        DELIVERY_UPDATE = "delivery_update"
+        PAYMENT_RECEIVED = "payment_received"
+        CREDIT_ALERT = "credit_alert"
+        GENERAL = "general"
+
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE, db_index=True, related_name="notifications"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        db_index=True,
+    )
+    kind = models.TextField(choices=Kind.choices, default=Kind.GENERAL, db_index=True)
+    title = models.TextField()
+    message = models.TextField(blank=True, null=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    link = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "client_notifications"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.kind}] {self.title}"
+
+
+# ---------------------------------------------------------------------------
+# Espace Pro — B2B pricing, loyalty & credit-request extensions
+# ---------------------------------------------------------------------------
+class ClientPriceDiscount(models.Model):
+    """Client-specific B2B discount rate applied on top of the list price.
+
+    scoped by product category (e.g. « -10% sur le Pin » → category
+    ``Bois de Construction``) or by a single wood species. ``scope="all"``
+    covers every product of the client. The most specific rule wins
+    (species > category > all) and the resulting price is what the client
+    sees in the Catalogue & Tarifs page and in the online timber calculator.
+    """
+
+    class Scope(models.TextChoices):
+        ALL = "all"
+        CATEGORY = "category"
+        WOOD_TYPE = "wood_type"
+
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE, db_index=True, related_name="price_discounts"
+    )
+    label = models.TextField(
+        help_text="Libellé affiché au client (ex. « Atelier Premium : −10 % sur le Pin »).",
+    )
+    scope = models.TextField(choices=Scope.choices, default=Scope.ALL, db_index=True)
+    category = models.TextField(blank=True, null=True, choices=Product.Category.choices)
+    wood_type = models.ForeignKey(
+        WoodType, on_delete=models.CASCADE, null=True, blank=True, db_index=True
+    )
+    discount_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("0"),
+        help_text="Remise en % appliquée sur le prix de vente catalogue (HT par m³).",
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "client_price_discounts"
+        ordering = ["-discount_percent"]
+
+    def __str__(self):
+        return f"{self.client.code} — {self.label} (−{self.discount_percent}%)"
+
+
+class LoyaltyLedger(models.Model):
+    """Points Pro earned by a professional client on shipped (invoiced) volume.
+
+    Rule: **1 m³ acheté = 50 Points Pro** (rounding down). The ledger keeps
+    one entry per sale order so the Fidélité page can show a real points
+    history. Tiers (Argent / Or / Platine) are derived from the cumulative
+    invoiced volume; perks (livraison offerte, ristourne annuelle) depend on
+    the tier.
+    """
+
+    class Reason(models.TextChoices):
+        VOLUME = "volume"          # points earned on a shipped sales order
+        ADJUSTMENT = "adjustment"  # manual credit/debit by the back-office
+
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE, db_index=True, related_name="loyalty_ledger"
+    )
+    sales_order = models.ForeignKey(
+        SalesOrder,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_index=True,
+        related_name="loyalty_entries",
+    )
+    reason = models.TextField(choices=Reason.choices, default=Reason.VOLUME, db_index=True)
+    points = models.IntegerField(default=0)
+    volume_m3 = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0"))
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "loyalty_ledger"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.client.code} {self.points:+d} pts ({self.reason})"
+
+
+class CreditLimitRequest(models.Model):
+    """A client's request to raise their authorised credit ceiling.
+
+    The portal blocks order placement once the client is ``is_blocked`` or
+    when the projected encours would exceed the plafond; the client then asks
+    for an increase and the back-office approves / rejects it.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+
+    client = models.ForeignKey(
+        Client, on_delete=models.CASCADE, db_index=True, related_name="credit_requests"
+    )
+    requested_limit = models.DecimalField(max_digits=14, decimal_places=2)
+    reason = models.TextField(blank=True, null=True)
+    status = models.TextField(choices=Status.choices, default=Status.PENDING, db_index=True)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_index=True,
+    )
+    decision_note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "credit_limit_requests"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.client.code} → {self.requested_limit} MAD ({self.status})"

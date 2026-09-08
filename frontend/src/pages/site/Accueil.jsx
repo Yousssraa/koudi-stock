@@ -5,25 +5,47 @@ import { downloadPdf } from "../../api/download.js";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
 import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
+import SavoirFaire from "../../components/SavoirFaire.jsx";
+import BrandsMarquee from "../../components/BrandsMarquee.jsx";
 
-const CATEGORY_COPY = {
-  "Bois de Construction": {
-    title: "Bois de construction",
-    d: "Madriers, bastaings, chevrons, voliges, poteaux et rondins en pin sylvestre et sapin du Nord. Du bois de charpente et d'ossature au meilleur rapport prix/m³.",
+const PRODUCT_FAMILIES = [
+  {
+    title: "BOIS DE MENUISERIE & INDUSTRIELS",
+    d: "KOUDI WOOD propose une large variété de bois venant de diverses régions du monde. Bois rouge, blanc, madriers de construction, pin, bois exotiques ou bois durs, nous sommes en mesure de répondre à tous vos besoins.",
+    img: "/wood/menuiserie.jpg",
+    to: "/categorie/Bois rouge",
   },
-  "Bois Traité Autoclave": {
-    title: "Bois traité autoclave",
-    d: "Madriers, chevrons, poteaux carrés et lames de terrasse traités Cl.3 vert ou Cl.4 marron. Des essences durables pour les usages extérieurs et le contact sol.",
+  {
+    title: "PANNEAUX DÉCORATIFS & INDUSTRIELS",
+    d: "KOUDI WOOD dispose d'un stock de panneaux impressionnant. Contreplaqués, MDF, HDF, panneaux particules, high gloss sans oublier les panneaux portes, vous trouverez votre bonheur chez KOUDI WOOD, et ce toujours au meilleur prix.",
+    img: "/wood/panneau-deco.jpg",
+    to: "/categorie/Panneaux",
   },
-  "Bois Feuillus & Nobles": {
-    title: "Feuillus & bois nobles",
-    d: "Chêne, hêtre étuvé et iroko : des essences nobles pour l'ébénisterie, la menuiserie de précision et les réalisations d'exception.",
+  {
+    title: "PRODUITS DE COFFRAGE",
+    d: "KOUDI WOOD figure parmi les premiers importateurs à avoir proposé à l'industrie de la construction marocaine, le système de coffrage à l'aide de Poutres H20 et de Panneaux Triplis.",
+    img: "/wood/coffrage-new.jpg",
+    to: "/categorie/Coffrage",
   },
-  "Panneaux & Dérivés": {
-    title: "Panneaux & dérivés",
-    d: "Plywood filmé, contreplaqués et panneaux aux dimensions standard 1,22 × 2,44 m. Une gamme complète pour vos chantiers et vos finitions.",
+  {
+    title: "ISOLATION & ÉTANCHÉITÉ",
+    d: "KOUDI WOOD élargit sa gamme de produits en vous proposant une panoplie de produits pour couvrir vos besoins en isolation et étanchéité. Laines isolantes, plaques de plâtre, feuilles d'étanchéité bitumineuses, faux plafonds… KOUDI WOOD devient votre one-stop-shop.",
+    img: "/wood/isolation.jpg",
+    to: "/produits",
   },
-};
+  {
+    title: "AMÉNAGEMENT EXTÉRIEUR",
+    d: "Chez KOUDI WOOD, vous trouverez votre bonheur pour tous vos besoins en bois d'extérieur. Decking, lambris, bardage, nos équipes de spécialistes vous orienteront vers le produit le plus adapté à votre projet.",
+    img: "/wood/amenagement-ext.jpg",
+    to: "/produits",
+  },
+  {
+    title: "TÔLE & FER À BÉTON",
+    d: "Économique, résistante et se fixant facilement sur des chevrons en sapin, la tôle galvanisée ondulée est utilisée dans la construction de hangars, de palissades de chantiers en tant que couverture et bardage de bâtiments.",
+    img: "/wood/fer-a-beton.jpg",
+    to: "/produits",
+  },
+];
 
 const STATS = [
   { value: "10 000+", label: "M³ EN STOCK PERMANENT" },
@@ -38,18 +60,12 @@ const ABOUT =
 export default function Accueil() {
   useDocumentTitle("KOUDI WOOD — IMPORTATEUR & DISTRIBUTEUR DE BOIS ET MATÉRIAUX DE CONSTRUCTION");
   const t = useT();
-  const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [company, setCompany] = useState(null);
-  const [loadErr, setLoadErr] = useState(null);
 
   useEffect(() => {
     api
-      .get("/public/categories/")
-      .then((r) => setCategories(r.data))
-      .catch(() => setLoadErr("Impossible de charger les catégories."));
-    api
-      .get("/public/products/?in_stock=1")
+      .get("/public/products/")
       .then((r) => setProducts(r.data))
       .catch(() => {});
     api
@@ -58,7 +74,24 @@ export default function Accueil() {
       .catch(() => {});
   }, []);
 
-  const featured = products.slice(0, 8);
+  // Produits emblématiques du marché marocain du bois, mis en avant par SKU.
+  // On place d'abord ceux qui sont en stock, puis on complète avec les autres.
+  const FEATURED_SKUS = [
+    "PR-100-100-4000", // Madrier Pin (construction / coffrage béton)
+    "EPC-063-225-4000", // Bastaing Épicéa (solivage)
+    "PR-063-225-4000", // Bastaing Pin (solivage)
+    "EPC-063-175-4000", // Chevron Épicéa (charpente / toiture)
+    "PR-063-175-4000", // Chevron Pin (charpente / toiture)
+    "EPC-027-040-3000", // Liteau Épicéa (support de tuiles)
+    "CFR-18-2500-1250", // Panneau de coffrage bakélisé (gros œuvre)
+    "CPO-15-2500-1220", // Contreplaqué Okoumé (menuiserie)
+  ];
+  const bySku = new Map(products.map((p) => [p.sku, p]));
+  const pinned = FEATURED_SKUS.map((s) => bySku.get(s)).filter(Boolean);
+  const rest = products.filter((p) => !FEATURED_SKUS.includes(p.sku));
+  const featured = [...pinned, ...rest]
+    .sort((a, b) => Number(a.stock_status === "out_of_stock") - Number(b.stock_status === "out_of_stock"))
+    .slice(0, 8);
 
   const downloadCatalog = async () => {
     try {
@@ -70,17 +103,32 @@ export default function Accueil() {
 
   return (
     <div>
+      {/* BOUTON WHATSAPP FLOTTANT */}
+      <a
+        href="https://api.whatsapp.com/send?phone=212711760597&text=Bonjour%20KOUDI%20WOOD%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits."
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Discuter sur WhatsApp"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-2xl shadow-black/30 transition hover:scale-110 hover:bg-[#1ebe5d]"
+      >
+        <svg viewBox="0 0 32 32" className="h-8 w-8 fill-current" aria-hidden="true">
+          <path d="M16 3C8.8 3 3 8.8 3 16c0 2.3.6 4.5 1.7 6.4L3 29l6.8-1.6c1.9 1 4 1.6 6.2 1.6 7.2 0 13-5.8 13-13S23.2 3 16 3zm0 23.6c-2 0-3.9-.5-5.6-1.5l-.4-.2-4.7 1.1 1.2-4.6-.3-.4C5.3 19.4 4.7 17.7 4.7 16 4.7 9.7 9.8 4.6 16 4.6s11.3 5 11.3 11.4S22.2 26.6 16 26.6zm6.2-8.5c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.5-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.4.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.3 3.2c.2.2 2.2 3.4 5.3 4.7.7.3 1.3.5 1.8.6.7.2 1.4.2 1.9.1.6-.1 2-.8 2.2-1.6.3-.8.3-1.4.2-1.6-.1-.1-.3-.2-.6-.4z" />
+        </svg>
+      </a>
+
       {/* HERO — full-bleed banner */}
       <section
         className="relative flex min-h-[70vh] items-center justify-center bg-cover bg-center"
-        style={{ backgroundImage: `url(${categoryImage("Bois Feuillus & Nobles")})` }}
+        style={{ backgroundImage: `url(/wood/burgundy-texture.jpg)`, backgroundColor: "#5c1420" }}
       >
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-black/35" />
         <div className="relative mx-auto max-w-4xl px-4 py-24 text-center lg:px-6">
           <h1 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
             IMPORTATEUR &amp; DISTRIBUTEUR DE BOIS ET MATÉRIAUX DE CONSTRUCTION
           </h1>
-          <p className="mt-5 text-lg font-medium tracking-wide text-amber sm:text-xl">Au Maroc depuis Casablanca</p>
+          <span className="mt-6 inline-block rounded-full bg-white/90 px-5 py-2 text-lg font-semibold tracking-wide text-copper shadow-lg sm:text-xl">
+            Au Maroc depuis Casablanca · Bordeaux
+          </span>
         </div>
       </section>
 
@@ -90,43 +138,30 @@ export default function Accueil() {
           <span className="border-b-4 border-amber pb-1">DÉCOUVREZ NOS PRODUITS</span>
         </h2>
 
-        {loadErr && <p className="mb-6 text-center text-sm text-rose">{loadErr}</p>}
-
-        {/* 2 rows of 3 category cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.length > 0
-            ? categories.map((c) => {
-                const meta = CATEGORY_COPY[c.key] || {};
-                return (
-                  <Link
-                    key={c.key}
-                    to={`/categorie/${encodeURIComponent(c.key)}`}
-                    className="group overflow-hidden rounded-xl bg-panel ring-1 ring-line transition hover:shadow-xl hover:shadow-black/10"
-                  >
-                    <div className="aspect-[16/9] overflow-hidden">
-                      <img
-                        src={categoryImage(c.key)}
-                        alt={c.label}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="text-lg font-semibold leading-snug text-frost group-hover:text-amber">
-                        {meta.title || c.label}
-                      </h3>
-                      <p className="mt-3 text-justify text-sm leading-relaxed text-ash">
-                        {meta.d || `Explorez notre gamme ${c.label.toLowerCase()}.`}
-                      </p>
-                      <span className="mt-5 inline-block rounded-md bg-amber px-5 py-2.5 text-sm font-semibold text-ink shadow transition hover:brightness-110">
-                        DÉCOUVRIR
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })
-            : Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-[16/10] animate-pulse rounded-xl bg-raise/70 ring-1 ring-line" />
-              ))}
+          {PRODUCT_FAMILIES.map((f) => (
+            <Link
+              key={f.title}
+              to={f.to}
+              title="TOUS NOS PRODUITS"
+              className="group block"
+            >
+              <div className="aspect-[16/9] overflow-hidden">
+                <img
+                  src={f.img}
+                  alt={f.title}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              </div>
+              <div className="pt-4">
+                <h3 className="text-lg font-semibold leading-snug text-frost group-hover:text-amber">{f.title}</h3>
+                <p className="mt-2 text-justify text-sm leading-relaxed text-ash">{f.d}</p>
+                <span className="mt-4 inline-block text-sm font-semibold uppercase tracking-wide text-amber underline underline-offset-4 transition group-hover:text-copper">
+                  DÉCOUVRIR
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -250,6 +285,12 @@ export default function Accueil() {
           </div>
         </div>
       </section>
+
+      {/* NOTRE SAVOIR-FAIRE */}
+      <SavoirFaire />
+
+      {/* LES MARQUES LES PLUS RÉPUTÉES */}
+      <BrandsMarquee />
 
       {/* Featured products */}
       <section className="border-b border-line bg-panel/60">

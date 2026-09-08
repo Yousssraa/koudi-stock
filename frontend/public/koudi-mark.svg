@@ -1,7 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#1E3A2B"/>
-  <circle cx="32" cy="32" r="19.5" fill="none" stroke="#B85B14" stroke-width="4"/>
-  <circle cx="32" cy="32" r="12.5" fill="none" stroke="#D97A2B" stroke-width="3.4"/>
-  <circle cx="32" cy="32" r="5.2" fill="#B85B14"/>
-  <path d="M27.5 31.5l4.5-5 4.5 5M32 26.8v11" stroke="#1E3A2B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Solid burgundy rounded-square ground -->
+  <rect width="64" height="64" rx="14" fill="#7a1f2b"/>
+  <!-- Subtle inner sheen (copper tone toward bottom-right) -->
+  <path d="M14 52c18 10 34 4 40-2C52 60 36 64 14 52z" fill="#5c1420" opacity="0.55" fill-rule="evenodd"/>
+  <circle cx="46" cy="18" r="26" fill="#a34a56" opacity="0.18"/>
+
+  <!-- White sawn-log: tree-ring target with a vertical cut -->
+  <circle cx="32" cy="31" r="19" fill="none" stroke="#ffffff" stroke-width="2.6" opacity="0.9"/>
+  <circle cx="32" cy="31" r="13" fill="none" stroke="#ffffff" stroke-width="2.2"/>
+  <circle cx="32" cy="31" r="7" fill="none" stroke="#ffffff" stroke-width="2.2"/>
+
+  <!-- Heartwood core -->
+  <circle cx="32" cy="31" r="2.6" fill="#ffffff"/>
+
+  <!-- Vertical cut through the log -->
+  <path d="M32 34V45.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M27 40.5L32 45.5l5-5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

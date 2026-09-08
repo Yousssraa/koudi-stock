@@ -7,7 +7,9 @@ import { clearToken } from "../auth.js";
 const NAV = [
   { to: "/app", label: "Tableau de bord", icon: "◧" },
   { to: "/app/stock", label: "Stock", icon: "▦" },
+  { to: "/app/tarifs", label: "Tarifs & Prix", icon: "◈" },
   { to: "/app/transport", label: "Transport & Logistique", icon: "🚚" },
+  { to: "/app/facturation", label: "Facturation", icon: "🧾" },
   { to: "/app/archive", label: "Archive", icon: "🗄" },
 ];
 
@@ -49,26 +51,35 @@ export default function Layout() {
           <Logo />
         </div>
         <nav className="flex-1 space-y-1 px-3 py-5">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-gradient-to-r from-amber to-copper text-ink shadow-lg shadow-amber/20"
-                    : "text-ash hover:bg-raise hover:text-frost"
-                }`
-              }
-            >
-              <span aria-hidden className="text-base leading-none">
-                {item.icon}
-              </span>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+{NAV.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                isActive
+                  ? "bg-gradient-to-r from-amber to-copper text-ink shadow-lg shadow-amber/20"
+                  : "text-ash hover:bg-raise hover:text-frost"
+              }`
+            }
+          >
+            <span aria-hidden className="text-base leading-none">
+              {item.icon}
+            </span>
+            {item.label}
+          </NavLink>
+        ))}
+        <div className="px-4 pt-4">
+          <a
+            href="/pro"
+            className="flex items-center gap-3 rounded-xl border border-amber/30 px-4 py-2.5 text-sm font-medium text-amber transition hover:bg-amber/10"
+          >
+            <span aria-hidden className="text-base leading-none">🏢</span>
+            Espace Pro clients
+          </a>
+        </div>
+      </nav>
         <div className="border-t border-line px-5 py-4">
           <p className="text-[11px] leading-relaxed text-dim">
             Société de Vente & Gestion de Stock du Bois — Casablanca · Tanger

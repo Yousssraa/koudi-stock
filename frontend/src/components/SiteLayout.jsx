@@ -164,6 +164,15 @@ function Navbar() {
           <NavLink to="/produits" end className={({ isActive }) => `${linkBase} ${isActive ? "text-amber" : ""}`}>
             {t.nav.boutiques}
           </NavLink>
+          <NavLink to="/apropos" className={({ isActive }) => `${linkBase} ${isActive ? "text-amber" : ""}`}>
+            {t.nav.apropos}
+          </NavLink>
+          <NavLink to="/actualites" className={({ isActive }) => `${linkBase} ${isActive ? "text-amber" : ""}`}>
+            {t.nav.actualites}
+          </NavLink>
+          <NavLink to="/equipe" className={({ isActive }) => `${linkBase} ${isActive ? "text-amber" : ""}`}>
+            {t.nav.equipe}
+          </NavLink>
           <NavLink to="/devis" className={({ isActive }) => `${linkBase} ${isActive ? "text-amber" : ""}`}>
             {t.nav.devis}
           </NavLink>
@@ -180,7 +189,7 @@ function Navbar() {
             <span aria-hidden>📥</span> Télécharger le catalogue
           </button>
           <Link
-            to="/app/login"
+            to="/pro/login"
             className="hidden rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 sm:inline-block"
           >
             {t.nav.espacePro}
@@ -205,12 +214,15 @@ function Navbar() {
           <nav className="grid grid-cols-1 gap-1">
             <Link to="/" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">🗂 {t.nav.accueil}</Link>
             <Link to="/produits" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">🛒 {t.nav.boutiques}</Link>
+            <Link to="/apropos" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">ℹ️ {t.nav.apropos}</Link>
+            <Link to="/actualites" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">📰 {t.nav.actualites}</Link>
+            <Link to="/equipe" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">👥 {t.nav.equipe}</Link>
             <Link to="/devis" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">📄 {t.nav.devis}</Link>
             <Link to="/contact" className="rounded-lg px-3 py-2.5 text-sm font-medium text-frost hover:bg-raise">✉ {t.nav.contact}</Link>
             <button onClick={downloadCatalog} className="flex items-center gap-2 rounded-lg border border-amber/40 bg-panel px-3 py-2.5 text-sm font-medium text-amber hover:bg-amber/10">
               📥 Télécharger le catalogue
             </button>
-            <Link to="/app/login" className="rounded-lg bg-gradient-to-r from-amber to-copper px-3 py-2.5 text-center text-sm font-semibold text-ink">
+            <Link to="/pro/login" className="rounded-lg bg-gradient-to-r from-amber to-copper px-3 py-2.5 text-center text-sm font-semibold text-ink">
               {t.nav.espacePro}
             </Link>
             <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-dim">
@@ -281,6 +293,9 @@ function Footer() {
           <ul className="space-y-2 text-sm text-ash">
             <li><Link to="/" className="transition hover:text-amber">{t.nav.accueil}</Link></li>
             <li><Link to="/produits" className="transition hover:text-amber">{t.nav.boutiques}</Link></li>
+            <li><Link to="/apropos" className="transition hover:text-amber">{t.nav.apropos}</Link></li>
+            <li><Link to="/actualites" className="transition hover:text-amber">{t.nav.actualites}</Link></li>
+            <li><Link to="/equipe" className="transition hover:text-amber">{t.nav.equipe}</Link></li>
             <li><Link to="/devis" className="transition hover:text-amber">{t.nav.devis}</Link></li>
             <li><Link to="/contact" className="transition hover:text-amber">{t.nav.contact}</Link></li>
           </ul>
@@ -301,6 +316,36 @@ function Footer() {
               </li>
             )}
           </ul>
+        </div>
+      </div>
+      <div className="border-t border-line">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-4 py-8 lg:grid-cols-3 lg:px-6">
+          <div>
+            <p className="font-display text-sm font-bold uppercase tracking-[0.15em] text-frost">Nous trouver</p>
+            <p className="mt-1 text-sm text-ash">{company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"}</p>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber to-copper px-4 py-2 text-xs font-bold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+            >
+              Itinéraire →
+            </a>
+          </div>
+          <div className="lg:col-span-2">
+            <iframe
+              title="Localisation KOUDI WOOD"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(
+                company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
+              )}&output=embed`}
+              className="h-[260px] w-full rounded-2xl border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
         </div>
       </div>
       <div className="border-t border-line py-4 text-center text-xs text-dim">
