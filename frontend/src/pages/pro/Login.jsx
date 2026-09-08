@@ -87,11 +87,22 @@ export default function ProLogin() {
             {loading ? "Connexion…" : "Accéder à mon espace"}
           </button>
           <p className="text-center text-xs text-dim">
-            Vous n'avez pas de compte ?{" "}
-            <Link to="/contact" className="text-amber hover:underline">
-              Contactez-nous
+            Pas encore de compte ?{" "}
+            <Link to="/pro/register" className="text-amber hover:underline">
+              S'inscrire
             </Link>
           </p>
+          <div className="flex items-center gap-3 pt-1">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-[11px] uppercase tracking-[0.15em] text-dim">ou</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <Link
+            to="/pro/register"
+            className="block w-full rounded-lg border border-amber/40 px-4 py-2.5 text-center text-sm font-semibold text-amber transition hover:bg-amber/10"
+          >
+            Créer un compte Espace Pro
+          </Link>
         </form>
       </div>
     </div>

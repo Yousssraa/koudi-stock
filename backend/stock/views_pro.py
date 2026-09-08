@@ -8,6 +8,9 @@ from decimal import Decimal
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
@@ -25,6 +28,7 @@ from .models import (
     ClientNotification,
     ClientUser,
     CreditNote,
+    Lead,
     Payment,
     Product,
     Quote,
@@ -32,6 +36,7 @@ from .models import (
     SalesOrder,
     compute_volume_m3,
 )
+from .views import _next_contact_code
 from .serializers import (
     ClientNotificationSerializer,
     ClientProfileSerializer,
@@ -154,6 +159,120 @@ class ProLoginView(APIView):
                     ).exists(),
                 },
             }
+        )
+
+
+class ProRegisterView(APIView):
+    """POST /api/pro/auth/register/ → self-service registration for new clients.
+
+    Body:
+    {
+      "username": "…", "password": "…", "email": "…",
+      "company_name": "…", "contact_name"?: "…", "phone"?: "…", "address"?: "…"
+    }
+    Creates a Django ``User`` linked to a fresh ``Client`` record (primary portal
+    user). The account is usable immediately; an internal ``Lead`` is recorded so
+    the back-office can follow up on the new signup.
+    """
+
+    permission_classes = []
+    parser_classes = [parsers.JSONParser]
+
+    USERNAME_FORBIDDEN = {"admin", "demo", "root", "staff", "operator"}
+    MIN_PASSWORD_LENGTH = 8
+
+    def post(self, request):
+        username = (request.data.get("username") or "").strip()
+        password = request.data.get("password") or ""
+        email = (request.data.get("email") or "").strip().lower()
+        company_name = (request.data.get("company_name") or "").strip()
+        contact_name = (request.data.get("contact_name") or "").strip() or None
+        phone = (request.data.get("phone") or "").strip() or None
+        address = (request.data.get("address") or "").strip() or None
+
+        errors = {}
+        if not username:
+            errors["username"] = "L'identifiant est requis."
+        elif len(username) < 3:
+            errors["username"] = "L'identifiant doit comporter au moins 3 caractères."
+        elif username.lower() in self.USERNAME_FORBIDDEN:
+            errors["username"] = "Cet identifiant n'est pas disponible."
+        elif User.objects.filter(username__iexact=username).exists():
+            errors["username"] = "Cet identifiant est déjà utilisé."
+
+        if len(password) < self.MIN_PASSWORD_LENGTH:
+            errors["password"] = (
+                f"Le mot de passe doit comporter au moins {self.MIN_PASSWORD_LENGTH} caractères."
+            )
+
+        if not email:
+            errors["email"] = "L'adresse e-mail est requise."
+        else:
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors["email"] = "Adresse e-mail invalide."
+            else:
+                if User.objects.filter(email__iexact=email).exists():
+                    errors["email"] = "Un compte existe déjà avec cette adresse e-mail."
+
+        if not company_name:
+            errors["company_name"] = "Le nom de la société est requis."
+
+        if errors:
+            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=contact_name or "",
+            )
+            client = Client.objects.create(
+                code=_next_contact_code(Client, "CLI"),
+                company_name=company_name,
+                contact_name=contact_name,
+                email=email,
+                phone=phone,
+                address=address,
+            )
+            ClientUser.objects.create(user=user, client=client, is_primary=True)
+            lead = Lead.objects.create(
+                kind=Lead.Kind.CONTACT,
+                name=contact_name or company_name,
+                company=company_name,
+                email=email,
+                phone=phone,
+                subject="Nouvelle inscription Espace Pro",
+                message=(
+                    f"Nouveau compte client créé en libre service : {company_name}."
+                    + (f" Adresse : {address}." if address else "")
+                ),
+            )
+            audit("create", "client", client.pk, client.code, {
+                "action": "pro_register",
+                "company": company_name,
+            })
+            audit("create", "lead", lead.pk, f"contact:{email}", {
+                "action": "pro_register",
+            })
+
+        token, _ = Token.objects.get_or_create(user=user)
+        audit("login", "pro_auth", user.pk, user.username)
+        return Response(
+            {
+                "token": token.key,
+                "user": {
+                    "id": user.pk,
+                    "username": user.username,
+                    "email": user.email or "",
+                    "client_id": client.pk,
+                    "company_name": client.company_name,
+                    "is_primary": True,
+                },
+            },
+            status=status.HTTP_201_CREATED,
         )
 
 

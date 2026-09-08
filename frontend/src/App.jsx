@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound.jsx";
 import Login from "./pages/Login.jsx";
 import ProLayout from "./components/ProLayout.jsx";
 import ProLogin from "./pages/pro/Login.jsx";
+import ProRegister from "./pages/pro/Register.jsx";
 import ProDashboard from "./pages/pro/Dashboard.jsx";
 import ProDevis from "./pages/pro/Devis.jsx";
 import ProDevisDetail from "./pages/pro/DevisDetail.jsx";
@@ -116,6 +117,14 @@ export default function App() {
         element={
           <RedirectIfProAuthed>
             <ProLogin />
+          </RedirectIfProAuthed>
+        }
+      />
+      <Route
+        path="/pro/register"
+        element={
+          <RedirectIfProAuthed>
+            <ProRegister />
           </RedirectIfProAuthed>
         }
       />

@@ -719,3 +719,76 @@ class FacturationTests(BaseModulesTest):
         self.assertEqual(amount_in_words(Decimal("1234.00")), "mille deux cent trente-quatre dirhams")
         self.assertEqual(amount_in_words(Decimal("12345.67")),
                          "douze mille trois cent quarante-cinq dirhams et soixante-sept centimes")
+
+
+class ProRegisterTests(TestCase):
+    """Self-service registration for the Espace Pro (client portal)."""
+
+    def setUp(self):
+        self.api = APIClient()
+
+    def register(self, **overrides):
+        payload = {
+            "username": "nouveauclient",
+            "password": "motdepasse123",
+            "email": "nouveau@client.ma",
+            "company_name": "Menuiserie Nouvelle",
+            "contact_name": "Aziz El Menari",
+            "phone": "0661-234567",
+            "address": "Rue des Bois, Casablanca",
+        }
+        payload.update(overrides)
+        return self.api.post("/api/pro/auth/register/", payload, format="json")
+
+    def test_register_creates_user_client_and_lead(self):
+        r = self.register()
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertTrue(r.data["token"])
+        self.assertEqual(r.data["user"]["company_name"], "Menuiserie Nouvelle")
+        self.assertTrue(r.data["user"]["is_primary"])
+
+        from stock.models import Client, ClientUser, Lead
+
+        user = User.objects.get(username="nouveauclient")
+        self.assertFalse(user.is_staff)
+        client = Client.objects.get(company_name="Menuiserie Nouvelle")
+        self.assertTrue(client.code.startswith("CLI-"))
+        self.assertTrue(ClientUser.objects.filter(user=user, client=client, is_primary=True).exists())
+        lead = Lead.objects.filter(email="nouveau@client.ma").first()
+        self.assertIsNotNone(lead)
+        self.assertEqual(lead.subject, "Nouvelle inscription Espace Pro")
+
+    def test_register_returns_token_usable_for_portal(self):
+        r = self.register()
+        self.assertEqual(r.status_code, 201, r.data)
+        self.api.credentials(HTTP_AUTHORIZATION=f"Token {r.data['token']}")
+        me = self.api.get("/api/pro/auth/me/")
+        self.assertEqual(me.status_code, 200, me.data)
+        self.assertEqual(me.data["client"]["company_name"], "Menuiserie Nouvelle")
+
+    def test_register_rejects_duplicate_username(self):
+        self.register()
+        r = self.register()
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("username", r.data["errors"])
+
+    def test_register_rejects_duplicate_email(self):
+        self.register()
+        r = self.register(username="autreclient")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("email", r.data["errors"])
+
+    def test_register_rejects_short_password(self):
+        r = self.register(password="court")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("password", r.data["errors"])
+
+    def test_register_rejects_missing_company(self):
+        r = self.register(company_name="")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("company_name", r.data["errors"])
+
+    def test_register_rejects_invalid_email(self):
+        r = self.register(email="pas-un-email")
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("email", r.data["errors"])

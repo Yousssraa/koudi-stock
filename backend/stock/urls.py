@@ -61,6 +61,7 @@ urlpatterns = [
     path("public/leads/", views_public.PublicLeadView.as_view(), name="public-lead"),
     # Espace Pro — client portal
     path("pro/auth/login/", views_pro.ProLoginView.as_view(), name="pro-login"),
+    path("pro/auth/register/", views_pro.ProRegisterView.as_view(), name="pro-register"),
     path("pro/auth/logout/", views_pro.ProLogoutView.as_view(), name="pro-logout"),
     path("pro/auth/me/", views_pro.ProMeView.as_view(), name="pro-me"),
     path("pro/dashboard/", views_pro.ProDashboardView.as_view(), name="pro-dashboard"),
