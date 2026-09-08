@@ -347,7 +347,7 @@ class ReferencePrice(models.Model):
         ordering = ["wood_type__name", "category", "piece_type"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(unit_price_mad__gte=0), name="reference_prices_price_nonneg"
+                condition=models.Q(unit_price_mad__gte=0), name="reference_prices_price_nonneg"
             ),
         ]
         indexes = [
@@ -378,10 +378,10 @@ class Inventory(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["product", "warehouse"], name="inventory_product_warehouse_key"),
             models.CheckConstraint(
-                check=models.Q(quantity__gte=0), name="inventory_quantity_check"
+                condition=models.Q(quantity__gte=0), name="inventory_quantity_check"
             ),
             models.CheckConstraint(
-                check=models.Q(reserved_qty__gte=0), name="inventory_reserved_check"
+                condition=models.Q(reserved_qty__gte=0), name="inventory_reserved_check"
             ),
         ]
 
@@ -539,7 +539,7 @@ class Payment(models.Model):
         ordering = ["-payment_date", "-id"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount__gt=0), name="payment_amount_positive"
+                condition=models.Q(amount__gt=0), name="payment_amount_positive"
             ),
         ]
 
@@ -938,7 +938,7 @@ class PriceTier(models.Model):
         ordering = ["min_volume_m3"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(discount_percent__gte=0, discount_percent__lte=90),
+                condition=models.Q(discount_percent__gte=0, discount_percent__lte=90),
                 name="price_tiers_discount_range",
             ),
         ]
