@@ -105,7 +105,7 @@ export default function Accueil() {
     <div>
       {/* BOUTON WHATSAPP FLOTTANT */}
       <a
-        href="https://api.whatsapp.com/send?phone=212711760597&text=Bonjour%20KOUDI%20WOOD%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits."
+        href="https://api.whatsapp.com/send?phone=212725151381&text=Bonjour%20KOUDI%20WOOD%2C%20je%20souhaite%20des%20informations%20sur%20vos%20produits."
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Discuter sur WhatsApp"
