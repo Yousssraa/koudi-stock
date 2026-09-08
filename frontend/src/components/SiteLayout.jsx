@@ -5,9 +5,8 @@ import { downloadPdf } from "../api/download.js";
 import { SiteLangProvider, useSiteLang, useT } from "../site/i18n.jsx";
 
 const SOCIALS = [
-  { name: "Facebook", href: "https://facebook.com" },
-  { name: "Instagram", href: "https://instagram.com" },
-  { name: "LinkedIn", href: "https://linkedin.com" },
+  { name: "Facebook", href: "https://www.facebook.com/share/1946wjjmUf/?mibextid=wwXIfr" },
+  { name: "Instagram", href: "https://www.instagram.com/koudi_wood?stkn=eDZyanZxOTR4Nmtx" },
 ];
 
 function Topbar() {
