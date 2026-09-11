@@ -2,15 +2,16 @@ import { Link, useParams } from "react-router-dom";
 import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { FAMILLES } from "../../site/familles.js";
 import { PRODUITS_DETAIL } from "../../site/produits_detail.js";
+import { downloadFiche } from "../../site/fiche.js";
 
 const TECH_SECTIONS = [
-  { key: "couleurs", label: "Couleurs", icon: "🎨" },
-  { key: "epaisseurs", label: "Épaisseurs & formats", icon: "📐" },
-  { key: "humidite", label: "Humidité", icon: "💧" },
-  { key: "provenances", label: "Provenances", icon: "🌍" },
-  { key: "sciage", label: "Sciage & aspect", icon: "🪚" },
-  { key: "tracabilite", label: "Traçabilité & normes", icon: "🏷️" },
-  { key: "conseils", label: "Conseils de mise en œuvre", icon: "💡" },
+  { key: "couleurs", label: "Couleurs" },
+  { key: "epaisseurs", label: "Épaisseurs & formats" },
+  { key: "humidite", label: "Humidité" },
+  { key: "provenances", label: "Provenances" },
+  { key: "sciage", label: "Sciage & aspect" },
+  { key: "tracabilite", label: "Traçabilité & normes" },
+  { key: "conseils", label: "Conseils de mise en œuvre" },
 ];
 
 export default function Exemple() {
@@ -35,72 +36,69 @@ export default function Exemple() {
   }
 
   const techRows = TECH_SECTIONS.filter((s) => detail?.[s.key]);
-  const hasSummary = detail?.description || ex.description;
 
   return (
     <div>
       {/* Banner */}
       <section className="relative overflow-hidden border-b border-line">
         <div className="absolute inset-0 bg-cover bg-center opacity-15" style={{ backgroundImage: `url(${fam.image})` }} />
-        <div className="relative mx-auto max-w-6xl px-4 py-12 lg:px-6">
+        <div className="relative mx-auto max-w-6xl px-4 py-10 lg:px-6">
           <Link to={`/gamme/${famKey}`} className="text-sm font-medium text-amber hover:underline">← {fam.label}</Link>
           <h1 className="font-display mt-3 text-3xl font-extrabold tracking-tight text-frost sm:text-4xl">{ex.name}</h1>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="inline-block rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold text-amber ring-1 ring-amber/20">
-              {ex.essence}
-            </span>
-          </div>
+          <p className="mt-2 text-sm text-ash">{ex.essence}</p>
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4 py-12 lg:px-6">
-        {/* Fiche produit */}
-        <div className="overflow-hidden rounded-2xl bg-panel shadow-xl shadow-black/10 ring-1 ring-line">
-          <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
-            <div className="relative h-56 lg:h-full lg:min-h-[320px]">
-              <img src={ex.image} alt={ex.name} className="h-full w-full object-cover" />
+      <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
+          {/* Colonne gauche : informations sans cadre */}
+          <div className="min-w-0">
+            <p className="text-base leading-relaxed text-frost">{detail?.description || ex.description}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to={`/devis?nom=${encodeURIComponent(ex.name)}`}
+                className="rounded-xl bg-gradient-to-r from-amber to-copper px-6 py-3 text-sm font-semibold text-ink shadow-xl shadow-amber/20 transition hover:brightness-110"
+              >
+                Ajouter au devis →
+              </Link>
+              <Link to="/contact" className="rounded-xl border border-line bg-panel px-6 py-3 text-sm font-semibold text-frost transition hover:bg-raise">
+                Nous contacter
+              </Link>
             </div>
-            <div className="flex flex-col p-6 lg:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">{fam.label}</p>
-              <h2 className="font-display mt-2 text-3xl font-extrabold text-frost">{ex.name}</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold text-amber ring-1 ring-amber/20">
-                  {ex.essence}
-                </span>
-              </div>
-              {hasSummary && <p className="mt-4 text-sm leading-relaxed text-ash">{detail?.description || ex.description}</p>}
-              {!hasSummary && <p className="mt-4 text-sm leading-relaxed text-ash">{ex.description}</p>}
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link
-                  to={`/devis?nom=${encodeURIComponent(ex.name)}`}
-                  className="rounded-xl bg-gradient-to-r from-amber to-copper px-6 py-3 text-sm font-semibold text-ink shadow-xl shadow-amber/20 transition hover:brightness-110"
-                >
-                  Ajouter au devis →
-                </Link>
-                <Link to="/contact" className="rounded-xl border border-line bg-panel px-6 py-3 text-sm font-semibold text-frost transition hover:bg-raise">
-                  Nous contacter
-                </Link>
-              </div>
+            <div className="mt-10">
+              {techRows.map((s, i) => (
+                <section key={s.key} className="border-t border-line py-6 first:border-t-0 first:pt-0">
+                  <h2 className="flex items-baseline gap-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-amber">
+                    <span className="font-display text-lg font-bold tracking-normal text-frost">{String(i + 2).padStart(2, "0")}</span>
+                    {s.label}
+                  </h2>
+                  <p className="mt-2.5 text-sm leading-relaxed text-ash">{detail[s.key]}</p>
+                </section>
+              ))}
             </div>
           </div>
-        </div>
 
-        {/* Sections techniques */}
-        <div className="mt-12 grid grid-cols-1 gap-4">
-          {techRows.map((s) => (
-            <section key={s.key} className="rounded-2xl bg-panel p-5 ring-1 ring-line sm:p-6">
-              <h3 className="flex items-center gap-2.5 font-display text-lg font-bold text-frost">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber/10 text-base ring-1 ring-amber/20">{s.icon}</span>
-                {s.label}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-ash">{detail[s.key]}</p>
-            </section>
-          ))}
+          {/* Colonne droite : image + téléchargement de la fiche */}
+          <aside className="lg:sticky lg:top-24 lg:h-fit">
+            <div className="overflow-hidden rounded-2xl bg-panel ring-1 ring-line">
+              <img src={ex.image} alt={ex.name} className="aspect-[4/3] w-full object-cover" />
+            </div>
+            <button
+              onClick={() => downloadFiche({ fam, ex, detail })}
+              className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-amber to-copper px-6 py-3 text-sm font-semibold text-ink shadow-xl shadow-amber/20 transition hover:brightness-110"
+            >
+              <span className="text-base leading-none">⬇</span>
+              Télécharger la fiche produit
+            </button>
+            <p className="mt-2 text-center text-[11px] text-ash">
+              Fiche PDF · {ex.name}
+            </p>
+          </aside>
         </div>
 
         {/* CTA devis */}
-        <div className="mt-12 flex flex-col items-center gap-4 rounded-2xl bg-panel p-6 text-center ring-1 ring-line sm:flex-row sm:justify-between sm:text-left">
+        <div className="mt-12 flex flex-col items-center gap-4 border-t border-line pt-8 text-center sm:flex-row sm:justify-between sm:text-left">
           <div>
             <p className="font-display text-lg font-bold text-frost">{ex.name}</p>
             <p className="mt-1 text-sm text-ash">
