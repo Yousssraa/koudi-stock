@@ -26,7 +26,10 @@ export default function Devis() {
     const noms = params.getAll("nom");
     const filled = noms.filter((n) => n.trim());
     if (sku || filled.length) {
-      setLines(filled.length ? filled.map((n) => ({ name: n, quantity: "" })) : [{ name: sku, quantity: "" }]);
+      const base = filled.length ? filled.map((n) => ({ name: n, quantity: "" })) : [{ name: sku, quantity: "" }];
+      const qte = params.get("qte");
+      if (qte && base.length) base[0].quantity = qte;
+      setLines(base);
     }
   }, [params]);
 
