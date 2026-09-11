@@ -35,7 +35,10 @@ export default function Exemple() {
     );
   }
 
-  const techRows = TECH_SECTIONS.filter((s) => detail?.[s.key]);
+  const allSections = [
+    { label: "Description", text: detail?.description || ex.description },
+    ...TECH_SECTIONS.map((s) => ({ label: s.label, text: detail?.[s.key] })),
+  ].filter((s) => s.text);
 
   return (
     <div>
@@ -50,36 +53,8 @@ export default function Exemple() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
-          {/* Colonne gauche : informations sans cadre */}
-          <div className="min-w-0">
-            <p className="text-base leading-relaxed text-frost">{detail?.description || ex.description}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to={`/devis?nom=${encodeURIComponent(ex.name)}`}
-                className="rounded-xl bg-gradient-to-r from-amber to-copper px-6 py-3 text-sm font-semibold text-ink shadow-xl shadow-amber/20 transition hover:brightness-110"
-              >
-                Ajouter au devis →
-              </Link>
-              <Link to="/contact" className="rounded-xl border border-line bg-panel px-6 py-3 text-sm font-semibold text-frost transition hover:bg-raise">
-                Nous contacter
-              </Link>
-            </div>
-
-            <div className="mt-10">
-              {techRows.map((s, i) => (
-                <section key={s.key} className="border-t border-line py-6 first:border-t-0 first:pt-0">
-                  <h2 className="flex items-baseline gap-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-amber">
-                    <span className="font-display text-lg font-bold tracking-normal text-frost">{String(i + 2).padStart(2, "0")}</span>
-                    {s.label}
-                  </h2>
-                  <p className="mt-2.5 text-sm leading-relaxed text-ash">{detail[s.key]}</p>
-                </section>
-              ))}
-            </div>
-          </div>
-
-          {/* Colonne droite : image + téléchargement de la fiche */}
+        {/* Image à gauche + infos à droite */}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-14">
           <aside className="lg:sticky lg:top-24 lg:h-fit">
             <div className="overflow-hidden rounded-2xl bg-panel ring-1 ring-line">
               <img src={ex.image} alt={ex.name} className="aspect-[4/3] w-full object-cover" />
@@ -95,6 +70,35 @@ export default function Exemple() {
               Fiche PDF · {ex.name}
             </p>
           </aside>
+
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">{fam.label}</p>
+            <p className="mt-3 text-base leading-relaxed text-frost">{ex.description}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to={`/devis?nom=${encodeURIComponent(ex.name)}`}
+                className="rounded-xl bg-gradient-to-r from-amber to-copper px-6 py-3 text-sm font-semibold text-ink shadow-xl shadow-amber/20 transition hover:brightness-110"
+              >
+                Ajouter au devis →
+              </Link>
+              <Link to="/contact" className="rounded-xl border border-line bg-panel px-6 py-3 text-sm font-semibold text-frost transition hover:bg-raise">
+                Nous contacter
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc technique pleine largeur, sans cadre, style Comarbois */}
+        <div className="mt-12">
+          {allSections.map((s, i) => (
+            <section key={s.label} className="border-t border-line py-6 first:border-t-0 first:pt-0">
+              <h2 className="flex items-baseline gap-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-amber">
+                <span className="font-display text-lg font-bold tracking-normal text-frost">{String(i + 1).padStart(2, "0")}</span>
+                {s.label}
+              </h2>
+              <p className="mt-2.5 text-sm leading-relaxed text-ash">{s.text}</p>
+            </section>
+          ))}
         </div>
 
         {/* CTA devis */}
