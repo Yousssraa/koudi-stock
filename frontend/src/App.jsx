@@ -4,6 +4,7 @@ import Accueil from "./pages/site/Accueil.jsx";
 import Produits from "./pages/site/Produits.jsx";
 import Produit from "./pages/site/Produit.jsx";
 import Gamme from "./pages/site/Gamme.jsx";
+import Exemple from "./pages/site/Exemple.jsx";
 import Categorie from "./pages/site/Categorie.jsx";
 import About from "./pages/site/About.jsx";
 import Equipe from "./pages/site/Equipe.jsx";
@@ -77,6 +78,7 @@ export default function App() {
         <Route index element={<Accueil />} />
         <Route path="produits" element={<Produits />} />
         <Route path="produit/:id" element={<Produit />} />
+        <Route path="gamme/:famKey/:index" element={<Exemple />} />
         <Route path="gamme/:key" element={<Gamme />} />
         <Route path="equipe" element={<Equipe />} />
         <Route path="categorie/:key" element={<Categorie />} />

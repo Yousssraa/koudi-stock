@@ -56,17 +56,24 @@ export default function Gamme() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fam.examples.map((ex) => {
+          {fam.examples.map((ex, i) => {
             const added = selected.includes(ex.name);
+            const detailUrl = `/gamme/${key}/${i}`;
             return (
               <div key={ex.name} className="group flex flex-col overflow-hidden rounded-2xl bg-panel ring-1 ring-line transition hover:shadow-lg hover:shadow-black/5">
-                <div className="relative h-44 overflow-hidden">
+                <Link to={detailUrl} className="relative block h-44 overflow-hidden">
                   <img src={ex.image} alt={ex.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                </div>
+                </Link>
                 <div className="flex flex-1 flex-col p-4 sm:p-5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber">{ex.essence}</p>
-                  <h3 className="font-display mt-1.5 text-base font-bold text-frost">{ex.name}</h3>
-                  <p className="mt-1.5 text-xs leading-relaxed text-ash">{ex.description}</p>
+                  <Link to={detailUrl} className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber hover:text-copper">
+                    {ex.essence}
+                  </Link>
+                  <Link to={detailUrl} className="font-display mt-1.5 text-base font-bold text-frost hover:text-amber">
+                    {ex.name}
+                  </Link>
+                  <Link to={detailUrl} className="mt-1.5 text-xs leading-relaxed text-ash hover:text-ash">
+                    {ex.description}
+                  </Link>
                   <button
                     onClick={() => toggle(ex.name)}
                     className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
