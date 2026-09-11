@@ -23,9 +23,10 @@ export default function Devis() {
 
   useEffect(() => {
     const sku = params.get("sku");
-    const nom = params.get("nom");
-    if (sku || nom) {
-      setLines([{ name: nom || sku, quantity: "" }]);
+    const noms = params.getAll("nom");
+    const filled = noms.filter((n) => n.trim());
+    if (sku || filled.length) {
+      setLines(filled.length ? filled.map((n) => ({ name: n, quantity: "" })) : [{ name: sku, quantity: "" }]);
     }
   }, [params]);
 
