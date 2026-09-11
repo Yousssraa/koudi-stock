@@ -5,7 +5,7 @@ import useDocumentTitle from "../../hooks/useDocumentTitle.jsx";
 import { useT } from "../../site/i18n.jsx";
 import { categoryImage, fmtPrice, productImage } from "../../site/utils.js";
 
-const PAGE_SIZE = 12;
+const MAX_PER_TYPE = 4;
 
 const CATEGORY_COPY = {
   "Bois de Construction": { title: "Bois de construction", d: "Madriers, bastaings, chevrons, voliges, poteaux et rondins en pin sylvestre et sapin du Nord pour charpente et ossature." },
@@ -22,7 +22,6 @@ export default function Categorie() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sort, setSort] = useState("name");
-  const [visible, setVisible] = useState(PAGE_SIZE);
 
   const meta = CATEGORY_COPY[key] || {
     title: key,
@@ -37,11 +36,10 @@ export default function Categorie() {
     setLoading(true);
     setError(null);
     api
-      .get(`/public/products/?category=${encodeURIComponent(key)}`)
+      .get(`/public/products/?category=${encodeURIComponent(key)}&limit=${MAX_PER_TYPE}`)
       .then((r) => setProducts(r.data))
       .catch((e) => setError(e.response?.data?.detail || "Erreur de chargement."))
       .finally(() => setLoading(false));
-    setVisible(PAGE_SIZE);
   }, [key]);
 
   const shown = useMemo(() => {
@@ -68,8 +66,8 @@ export default function Categorie() {
     else if (sort === "price_desc") list.sort((a, b) => Number(b.sale_price) - Number(a.sale_price));
     else if (sort === "new") list.sort((a, b) => (b.id || 0) - (a.id || 0));
     else list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    return list.slice(0, visible);
-  }, [products, sort, visible]);
+    return list.slice(0, MAX_PER_TYPE);
+  }, [products, sort]);
 
   return (
     <div>
@@ -142,7 +140,9 @@ export default function Categorie() {
         {/* Toolbar */}
         {!loading && products.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm text-ash">{products.length} produit(s)</span>
+            <span className="text-sm text-ash">
+                {products.length > MAX_PER_TYPE ? `${MAX_PER_TYPE} produits affichés sur ${products.length}` : `${products.length} produit(s)`}
+              </span>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -204,17 +204,6 @@ export default function Categorie() {
                 </div>
               ))}
             </div>
-
-            {visible < products.length && (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
-                  className="rounded-full border border-line bg-panel px-6 py-2.5 text-sm font-semibold text-frost transition hover:bg-raise"
-                >
-                  Charger plus de produits
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>

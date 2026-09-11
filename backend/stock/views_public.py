@@ -192,6 +192,11 @@ class PublicProductsView(APIView):
             qs = qs.filter(
                 inventory__quantity__gt=0, inventory__warehouse__is_active=True
             ).distinct()
+        if params.get("limit"):
+            try:
+                qs = qs[: max(1, int(params["limit"]))]
+            except (TypeError, ValueError):
+                pass
         return Response(PublicProductSerializer(qs, many=True).data)
 
 
