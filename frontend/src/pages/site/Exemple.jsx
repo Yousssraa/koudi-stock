@@ -10,18 +10,12 @@ import { downloadFiche } from "../../site/fiche.js";
 const BRAND_LINE = "KOUDI WOOD — Importateur & Distributeur de Bois et Matériaux de Construction";
 const INSTAGRAM = "https://www.instagram.com/koudi_wood?stkn=eDZyanZxOTR4Nmtx";
 
-const ENGAGEMENT =
-  "Équipe KOUDI WOOD : chaque lot est contrôlé à l'importation (taux d'humidité, classement d'aspect, conformité aux normes) et nos commerciaux vous accompagnent techniquement dans le choix du matériau et sa mise en œuvre.";
-
-function Rubric({ label, value }) {
-  if (!value) return null;
-  return (
-    <div>
-      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">{label}</h3>
-      <p className="mt-2 text-sm font-medium leading-relaxed text-gray-900">{value}</p>
-    </div>
-  );
-}
+const firstSentence = (text) => {
+  if (!text) return "";
+  const t = text.trim();
+  const m = t.match(/^.*?[.!?](?=\s|$)/s);
+  return (m && m[0].trim()) || t;
+};
 
 export default function Exemple() {
   const { famKey, index } = useParams();
@@ -49,36 +43,16 @@ export default function Exemple() {
     );
   }
 
-  const props = [c.densite, c.elasticite, c.resistance].filter(Boolean);
-  const description = [
-    detail?.description || ex.description,
-    props.length ? `Propriétés indicatives : ${props.join(" · ")}.` : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const facts = [
+    { label: "Essence", value: c.essence || ex.essence },
+    { label: "Provenance", value: firstSentence(detail?.provenances) },
+    { label: "Densité", value: c.densite },
+    { label: "Humidité", value: firstSentence(detail?.humidite) },
+    { label: "Épaisseurs", value: firstSentence(detail?.epaisseurs) },
+    { label: "Formats", value: firstSentence(qf.specif || detail?.sciage) },
+  ].filter((f) => f.value);
 
-  const tracabiliteConseils = [
-    ENGAGEMENT,
-    detail?.tracabilite,
-    detail?.conseils ? `Conseil de mise en œuvre : ${detail.conseils}` : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const col1 = [
-    { label: "Description", value: description },
-    { label: "Provenances", value: detail?.provenances },
-    { label: "Sciage / Process", value: detail?.sciage },
-    { label: "Épaisseurs", value: detail?.epaisseurs },
-    { label: "Qualités", value: qf.qualites },
-  ];
-
-  const col2 = [
-    { label: "Couleurs & aspect", value: detail?.couleurs },
-    { label: "Humidité", value: detail?.humidite },
-    { label: "Spécificités & formats", value: qf.specif },
-    { label: "Traçabilité & conseils KOUDI WOOD", value: tracabiliteConseils },
-  ];
+  const description = ex.description || firstSentence(detail?.description);
 
   const L = parseFloat((dims.length || "").replace(",", "."));
   const W = parseFloat((dims.width || "").replace(",", "."));
@@ -93,8 +67,7 @@ export default function Exemple() {
   const dimInput =
     "w-full rounded-lg border-0 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-900 outline-none ring-1 ring-gray-200 transition placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-amber";
 
-  const btnBase =
-    "flex w-full items-center justify-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-bold transition";
+  const btnBase = "flex w-full items-center justify-center gap-2.5 rounded-xl px-5 py-3.5 text-sm font-bold transition";
   const btnSecondary = `${btnBase} bg-white text-gray-800 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 hover:ring-gray-300`;
   const btnDark = `${btnBase} bg-gray-900 text-white shadow-md shadow-gray-900/10 hover:bg-gray-800`;
   const btnPrimary = `${btnBase} bg-gradient-to-r from-amber to-copper text-white shadow-xl shadow-amber/25 hover:brightness-110`;
@@ -102,63 +75,63 @@ export default function Exemple() {
   return (
     <div className="bg-white text-gray-900">
       <div className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
-        {/* Fil d'Ariane + identité de marque */}
         <Link to={`/gamme/${famKey}`} className="inline-flex items-center gap-1 text-sm font-medium text-amber hover:underline">
           ← {fam.label}
         </Link>
-        <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{BRAND_LINE}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{ex.name}</h1>
-          <span className="rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold text-amber ring-1 ring-amber/25">
-            {c.essence || ex.essence}
-          </span>
-        </div>
 
-        {/* 2 blocs principaux : specs (gauche) + visuel & actions B2B (droite) */}
-        <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
-          {/* A — Bloc gauche : spécifications techniques (2 colonnes internes) */}
-          <section className="order-2 lg:order-1" aria-label="Spécifications techniques">
-            <div className="grid grid-cols-1 gap-x-14 gap-y-10 sm:grid-cols-2">
-              <div className="space-y-10">
-                {col1.map((r) => (
-                  <Rubric key={r.label} label={r.label} value={r.value} />
-                ))}
-              </div>
-              <div className="space-y-10">
-                {col2.map((r) => (
-                  <Rubric key={r.label} label={r.label} value={r.value} />
-                ))}
-              </div>
+        {/* Image à gauche + PDF dessous, infos courtes à droite (style Comarbois) */}
+        <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-[440px_minmax(0,1fr)] lg:gap-14">
+          <aside className="lg:sticky lg:top-24 lg:h-fit">
+            <figure className="overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-gray-200">
+              <img src={ex.image} alt={ex.name} className="aspect-[4/3] w-full object-cover" />
+            </figure>
+            <div className="mt-4 space-y-3">
+              <button onClick={() => downloadFiche({ fam, ex, detail, c, qf })} className={btnDark}>
+                ⬇ Télécharger la fiche produit (PDF)
+              </button>
+              <a href={INSTAGRAM} target="_blank" rel="noreferrer" className={btnSecondary} title="Voir les réalisations sur Instagram">
+                🖼 Inspirations {ex.name}
+              </a>
             </div>
-          </section>
-
-          {/* B — Bloc droit : visuel d'inspiration + actions B2B */}
-          <aside className="order-1 lg:order-2">
-            <div className="lg:sticky lg:top-24">
-              <figure className="overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-gray-200">
-                <img src={ex.image} alt={`${ex.name} — rendu d'ambiance`} className="aspect-[4/3] w-full object-cover" />
-              </figure>
-              <p className="mt-2.5 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-gray-400">
-                Rendu d'ambiance · photographie non contractuelle
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <a href={INSTAGRAM} target="_blank" rel="noreferrer" className={btnSecondary} title="Voir les réalisations sur Instagram">
-                  🖼 Inspirations {ex.name}
-                </a>
-                <button onClick={() => downloadFiche({ fam, ex, detail, c, qf })} className={btnDark}>
-                  ⬇ Télécharger la fiche produit (PDF)
-                </button>
-                <button onClick={() => setQuoteOpen(true)} className={btnPrimary}>
-                  Demander un devis · Calculer le volume (m³) →
-                </button>
-              </div>
-            </div>
+            <p className="mt-2.5 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-gray-400">
+              Rendu d'ambiance · photo non contractuelle
+            </p>
           </aside>
+
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{BRAND_LINE}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{ex.name}</h1>
+              <span className="rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold text-amber ring-1 ring-amber/25">
+                {c.essence || ex.essence}
+              </span>
+            </div>
+
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-700">{description}</p>
+
+            <dl className="mt-7 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
+              {facts.map((f) => (
+                <div key={f.label}>
+                  <dt className="text-xs font-bold uppercase tracking-wider text-gray-500">{f.label}</dt>
+                  <dd className="mt-1 text-sm font-medium text-gray-900">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <button onClick={() => setQuoteOpen(true)} className={`${btnPrimary} !w-auto px-8`}>
+                Demander un devis · Calculer le volume (m³) →
+              </button>
+              <Link to="/contact" className={`${btnSecondary} !w-auto px-6`}>
+                Nous contacter
+              </Link>
+            </div>
+            <p className="mt-3 text-xs text-gray-400">Devis gratuit, sans engagement — réponse sous 24 h ouvrées.</p>
+          </div>
         </div>
       </div>
 
-      {/* Module de chiffrage express */}
+      {/* Chiffrage express */}
       {quoteOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -211,9 +184,7 @@ export default function Exemple() {
               </p>
             </div>
 
-            {!hasDims && (
-              <p className="mt-2 text-xs text-gray-400">Renseignez les trois dimensions pour calculer le volume.</p>
-            )}
+            {!hasDims && <p className="mt-2 text-xs text-gray-400">Renseignez les trois dimensions pour calculer le volume.</p>}
 
             <div className="mt-5 grid grid-cols-1 gap-3">
               <Link
