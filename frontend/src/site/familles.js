@@ -202,14 +202,14 @@ export const FAMILLES = [
         essence: "Laminée à chaud ou à froid, galvanisée",
         description:
           "Plaques et feuilles d'acier pour planchers, capotages, chaudronnerie et fabrication métallique. Diverses épaisseurs et formats.",
-        image: "/wood/fer-a-beton.jpg",
+        image: "/wood/tole-acier.jpg",
       },
       {
         name: "Bac acier nervuré",
         essence: "Acier protégé anti-corrosion",
         description:
           "Tôles nervurées ou ondulées pour toiture et bardage, posées sur ossature bois ou métallique. Léger, rapide à mettre en œuvre.",
-        image: "/wood/fer-a-beton.jpg",
+        image: "/wood/bac-acier.jpg",
       },
     ],
   },

@@ -119,6 +119,12 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# User-uploaded files (e.g. quote attachments). Served locally by urls.py.
+# Note: the Render disk is ephemeral — a redeploy wipes these files. For real
+# uploads later, use object storage (Supabase Storage / S3) instead.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Whitenoise serves the built SPA (frontend/dist) at the site root and the
 # Django admin's static files with compression + long-lived cache headers.
 STORAGES = {

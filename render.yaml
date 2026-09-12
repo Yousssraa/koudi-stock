@@ -31,3 +31,26 @@ services:
         sync: false
       - key: DB_SSLMODE
         value: "require"
+      # --- E-mail (notifications devis/contact) ---------------------------
+      # Valeurs à renseigner dans le dashboard Render (champs secrets) :
+      #   EMAIL_HOST_USER / EMAIL_HOST_PASSWORD / EMAIL_FROM
+      # Exemple Gmail : EMAIL_HOST=smtp.gmail.com, PORT=587, USE_TLS=True.
+      # Sans EMAIL_HOST l'e-mail part en "console" (messages perdus en prod).
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_USE_SSL
+        value: "False"
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_TIMEOUT
+        value: "10"
+      - key: EMAIL_SUBJECT_PREFIX
+        value: "[KOUDI WOOD] "

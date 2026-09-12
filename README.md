@@ -366,6 +366,26 @@ git push -u origin main
 Les autres variables (`SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS`,
 `CSRF_TRUSTED_ORIGINS`) sont déjà définies dans `render.yaml`.
 
+### E-mail (notifications devis / contact)
+
+Sans `EMAIL_HOST`, Django utilise le backend "console" : les demandes de devis
+et prises de contact **ne partent pas** en production. `render.yaml` déclare
+déjà les variables `EMAIL_*` — remplissez dans le dashboard Render les champs
+**secrets** (`EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_FROM`) et laissez
+les valeurs par défaut (`smtp.gmail.com:587`, TLS). Ouvrez une session console
+du service (`Render → Console`) et envoyez un test :
+
+```python
+python backend/manage.py shell -c "from django.core.mail import send_mail; send_mail('Test KOUDI', 'OK', None, ['vous@exemple.com'])"
+```
+
+### Fichiers (MEDIA) en production
+
+Les pièces jointes / fichiers importés sont servis par Django sous `/media/`.
+⚠️ Le disque de Render est **éphémère** : tout fichier stocké localement est
+**perdu à chaque redéploiement**. Pour de vrais uploads, branchez un stockage
+objet (Supabase Storage ou S3) — `backend/media/` est ignoré par git.
+
 ### 3. Repartir sur des données réelles
 
 ```bash

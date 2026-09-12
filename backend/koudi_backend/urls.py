@@ -1,6 +1,7 @@
 """KOUDI STOCK - root URL configuration."""
 from pathlib import Path
 
+from django.conf import settings
 from django.contrib import admin
 from django.http import FileResponse, HttpResponse, HttpResponseNotFound
 from django.urls import include, path, re_path
@@ -45,4 +46,20 @@ def spa(request, path=""):
     return HttpResponseNotFound("index.html not found")
 
 
-urlpatterns += [re_path(r"^(?!api/|admin/)(?P<path>.*)$", spa, name="spa")]
+def media(request, path=""):
+    """Serve files uploaded under MEDIA_ROOT (must be registered before the SPA
+    fallback below). Render's disk is ephemeral: back up these files or move to
+    object storage for production uploads."""
+    root = settings.MEDIA_ROOT.resolve()
+    target = (root / path).resolve()
+    if not str(target).startswith(str(root)) or not target.is_file():
+        return HttpResponseNotFound("Fichier introuvable")
+    response = FileResponse(open(target, "rb"))
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
+
+
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", media, name="media"),
+    re_path(r"^(?!api/|admin/|media/)(?P<path>.*)$", spa, name="spa"),
+]
