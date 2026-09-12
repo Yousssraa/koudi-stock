@@ -17,7 +17,7 @@ function slugify(name) {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function downloadFiche({ fam, ex, detail, c = {} }) {
+export async function downloadFiche({ fam, ex, detail, c = {}, qf = {} }) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -105,14 +105,16 @@ export async function downloadFiche({ fam, ex, detail, c = {} }) {
   const sections = [
     { title: "Description", text: detail?.description || ex.description },
     { title: "Essence", text: c.essence },
-    { title: "Couleurs", text: detail?.couleurs },
-    { title: "Épaisseurs & formats", text: detail?.epaisseurs },
-    { title: "Humidité", text: detail?.humidite },
     { title: "Provenances", text: detail?.provenances },
+    { title: "Sciage / Process", text: detail?.sciage },
+    { title: "Épaisseurs", text: detail?.epaisseurs },
+    { title: "Qualités", text: qf.qualites },
+    { title: "Couleurs & aspect", text: detail?.couleurs },
+    { title: "Humidité", text: detail?.humidite },
+    { title: "Spécificités & formats", text: qf.specif },
+    { title: "Traçabilité", text: detail?.tracabilite },
     { title: "Densité", text: c.densite },
     { title: "Élasticité & résistance", text: [c.elasticite, c.resistance].filter(Boolean).join(" · ") },
-    { title: "Sciage & aspect", text: detail?.sciage },
-    { title: "Traçabilité & normes", text: detail?.tracabilite },
     { title: "Applications", text: c.applications },
     { title: "Conseils de mise en œuvre", text: detail?.conseils },
   ];
