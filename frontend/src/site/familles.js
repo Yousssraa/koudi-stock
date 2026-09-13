@@ -105,21 +105,21 @@ export const FAMILLES = [
         essence: "Isolant minéral · λ dès 0,030 W/m.K",
         description:
           "Excellent rapport performance/prix pour murs, combles, cloisons et planchers. Réduit aussi les nuisances sonores.",
-        image: "/wood/isolation.jpg",
+        image: "/wood/exemple-laine-verre.jpg",
       },
       {
         name: "Laine de roche",
         essence: "Isolant minéral · bonne tenue au feu",
         description:
           "Plus dense, idéale pour l'isolation phonique, l'acoustique des cloisons et les plafonds. Support d'enduits et sous-étanchéité.",
-        image: "/wood/isolation.jpg",
+        image: "/wood/exemple-laine-roche.jpg",
       },
       {
         name: "Étanchéité bitumineuse",
         essence: "Feuilles bitumineuses · toitures",
         description:
           "Feuilles d'étanchéité pour toitures-terrasses, posées à chaud ou à froid. Complétées par plaques de plâtre et panneaux isolants.",
-        image: "/wood/isolation.jpg",
+        image: "/wood/exemple-etancheite.jpg",
       },
     ],
   },

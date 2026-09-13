@@ -108,6 +108,18 @@ Bing, une image au format WebP transmise directement (base64).
 | `exemple-h20.jpg` | Poutres H20 & panneaux triplis | Aperçu Bing (recherche d'image) |
 | `exemple-madrier.jpg` | Madriers & bois de coffrage | Fourni par le client (WebP) |
 
+## Photos des exemples ISOLATION & ÉTANCHÉITÉ (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme ISOLATION
+& ÉTANCHÉITÉ (Boutique). Sources : trois aperçus obtenus via la recherche
+d'images Bing.
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `exemple-laine-verre.jpg` | Laine de verre | Aperçu Bing (recherche d'image) |
+| `exemple-laine-roche.jpg` | Laine de roche | Aperçu Bing (recherche d'image) |
+| `exemple-etancheite.jpg` | Étanchéité bitumineuse | Aperçu Bing (recherche d'image) |
+
 ## Photos des Actualités (remplacement par des photos Wikimedia)
 
 Photos de la page Actualités.
