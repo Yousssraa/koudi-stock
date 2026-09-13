@@ -52,4 +52,21 @@ type `image/jpeg`). Sources : Wikimedia Commons.
 | `tole-acier.jpg` | Tôle d'acier galvanisée | Mojtabagholampour | CC BY-SA 4.0 |
 | `bac-acier.jpg` | Fixation de tôles ondulées en acier sur toiture | Collins, Tudor Washington (Auckland Museum) | CC BY 4.0 |
 
+## Images de la vitrine fournies par le client (remplacement)
+
+Photos fournies par le client pour la vitrine des familles (Boutique). Sources :
+deux images au format WebP transmises directement (base64), une image produit
+Comarbois et quatre aperçus obtenus via la recherche d'images Bing (l'un dont
+l'original provient du site scieriejamet.fr).
+
+| Fichier | Famille / usage | Source |
+| --- | --- | --- |
+| `bois-menuiserie.webp` | BOIS DE MENUISERIE & INDUSTRIELS | Fourni par le client (WebP « BOIS DE MENUISERIE ») |
+| `panneaux-hetre.jpg` | PANNEAUX DÉCORATIFS & INDUSTRIELS | Comarbois (`comarbois.com/wp-content/uploads/2024/01/hetre4-430x430.jpg`, hêtre étuvé) |
+| `coffrage-planches.jpg` | PRODUITS DE COFFRAGE | Original : scieriejamet.fr (`pile-planches-bois-vue-face-scaled.jpg`) — via Bing |
+| `isolation-mur.webp` | ISOLATION & ÉTANCHÉITÉ | Aperçu Bing (recherche d'image) |
+| `amenagement-interieur.webp` | AMÉNAGEMENT INTÉRIEUR | Aperçu Bing (recherche d'image) |
+| `amenagement-exterieur.webp` | AMÉNAGEMENT EXTÉRIEUR | Aperçu Bing (recherche d'image) |
+| `tole-fer-beton.webp` | TÔLE & FER À BÉTON | Fourni par le client (WebP « TÔLE & FER À BÉTON ») |
+
 Liens : https://commons.wikimedia.org

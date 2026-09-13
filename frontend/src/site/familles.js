@@ -6,7 +6,7 @@ export const FAMILLES = [
   {
     key: "bois-menuiserie",
     label: "BOIS DE MENUISERIE & INDUSTRIELS",
-    image: "/wood/menuiserie.jpg",
+    image: "/wood/bois-menuiserie.webp",
     description:
       "Résineux (bois rouge, bois blanc) et feuillus nobles pour la menuiserie, la charpente, l'ébénisterie et l'industrie.",
     examples: [
@@ -36,7 +36,7 @@ export const FAMILLES = [
   {
     key: "panneaux-decoratifs",
     label: "PANNEAUX DÉCORATIFS & INDUSTRIELS",
-    image: "/wood/panneau-deco.jpg",
+    image: "/wood/panneaux-hetre.jpg",
     description:
       "Panneaux dérivés du bois : MDF, HDF, contreplaqués, particules — bruts, laqués, replaqués et panneaux de portes.",
     examples: [
@@ -66,7 +66,7 @@ export const FAMILLES = [
   {
     key: "produits-coffrage",
     label: "PRODUITS DE COFFRAGE",
-    image: "/wood/coffrage-new.jpg",
+    image: "/wood/coffrage-planches.jpg",
     description:
       "Solutions réutilisables pour béton : contreplaqué filmé bakélisé, poutres H20, madriers et bois de coffrage.",
     examples: [
@@ -96,7 +96,7 @@ export const FAMILLES = [
   {
     key: "isolation-etancheite",
     label: "ISOLATION & ÉTANCHÉITÉ",
-    image: "/wood/isolation.jpg",
+    image: "/wood/isolation-mur.webp",
     description:
       "Isolation thermique et acoustique (laines, plaques, panneaux) et étanchéité de toiture (feuilles bitumineuses).",
     examples: [
@@ -126,7 +126,7 @@ export const FAMILLES = [
   {
     key: "amenagement-interieur",
     label: "AMÉNAGEMENT INTÉRIEUR",
-    image: "/wood/panneau-deco.jpg",
+    image: "/wood/amenagement-interieur.webp",
     description:
       "Parquets, lambris, plinthes et quarts de rond, portes et habillages pour finir et valoriser l'intérieur.",
     examples: [
@@ -156,7 +156,7 @@ export const FAMILLES = [
   {
     key: "amenagement-exterieur",
     label: "AMÉNAGEMENT EXTÉRIEUR",
-    image: "/wood/amenagement-ext.jpg",
+    image: "/wood/amenagement-exterieur.webp",
     description:
       "Lames de terrasse, bardage, palissades et structures extérieures en bois autoclave classe 3-4 ou essence durable.",
     examples: [
@@ -186,7 +186,7 @@ export const FAMILLES = [
   {
     key: "tole-fer-beton",
     label: "TÔLE & FER À BÉTON",
-    image: "/wood/fer-a-beton.jpg",
+    image: "/wood/tole-fer-beton.webp",
     description:
       "Acier de gros œuvre : rond à béton haute adhérence, tôles planes et bacs acier pour la construction.",
     examples: [
