@@ -1,4 +1,4 @@
-"""KOUDI STOCK - root URL configuration."""
+"""KOUDI WOOD - root URL configuration."""
 from pathlib import Path
 
 from django.conf import settings
@@ -23,7 +23,7 @@ SPA_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 def spa(request, path=""):
     if not SPA_DIST.exists():
         return HttpResponse(
-            "KOUDI STOCK frontend is not built. Run `npm run build` inside the "
+            "KOUDI WOOD frontend is not built. Run `npm run build` inside the "
             "`frontend/` directory, then refresh.",
             content_type="text/plain",
             status=200,

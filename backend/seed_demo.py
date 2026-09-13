@@ -1,4 +1,4 @@
-"""Populate the database with a realistic merchant timber catalog for KOUDI STOCK.
+"""Populate the database with a realistic merchant timber catalog for KOUDI WOOD.
 
 Run:  python seed_demo.py
 
@@ -842,7 +842,7 @@ user.is_staff = True
 user.set_password("demo2026")
 user.save()
 
-print("\n--- KOUDI STOCK demo data ready ---")
+print("\n--- KOUDI WOOD demo data ready ---")
 for fam in ["Bois rouge", "Bois blanc", "Bois exotique", "Bois noble", "Panneaux", "Coffrage"]:
     print(f"  {fam:14s}: {Product.objects.filter(category=fam, is_active=True).count()} produits")
 print(f"  fournisseurs : {Supplier.objects.count()} | clients : {Client.objects.count()}")

@@ -1,4 +1,4 @@
-# KOUDI STOCK — Guide de présentation (démo)
+# KOUDI WOOD — Guide de présentation (démo)
 
 Prêt en 30 secondes, une seule adresse à montrer : **http://127.0.0.1:8001**
 

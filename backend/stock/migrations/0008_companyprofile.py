@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             name='CompanyProfile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.TextField(default='KOUDI STOCK')),
+                ('name', models.TextField(default='KOUDI WOOD')),
                 ('tagline', models.TextField(default='Vente & Gestion de Stock du Bois')),
                 ('address', models.TextField(blank=True, default='')),
                 ('phone', models.CharField(blank=True, default='', max_length=50)),

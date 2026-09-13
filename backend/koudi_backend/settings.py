@@ -1,5 +1,5 @@
 """
-Django settings for KOUDI STOCK.
+Django settings for KOUDI WOOD.
 
 Connects directly to the existing Supabase PostgreSQL database
 and exposes a DRF API consumed by the React frontend.

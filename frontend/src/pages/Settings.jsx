@@ -94,7 +94,7 @@ export default function Settings() {
           <div className="space-y-4">
             <div>
               <label className={label}>Nom de la société</label>
-              <input value={form.name || ""} onChange={set("name")} className={input} placeholder="KOUDI STOCK" />
+              <input value={form.name || ""} onChange={set("name")} className={input} placeholder="KOUDI WOOD" />
             </div>
             <div>
               <label className={label}>Slogan</label>

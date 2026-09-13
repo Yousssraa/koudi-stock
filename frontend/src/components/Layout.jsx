@@ -18,11 +18,11 @@ function Logo() {
     <div className="flex items-center gap-3">
       <img
         src="/koudi-mark.svg"
-        alt="KOUDI STOCK"
+        alt="KOUDI WOOD"
         className="h-10 w-10 rounded-xl shadow-lg shadow-black/40 ring-1 ring-amber/40"
       />
       <div>
-        <p className="font-display text-lg font-bold tracking-tight text-frost">KOUDI STOCK</p>
+        <p className="font-display text-lg font-bold tracking-tight text-frost">KOUDI WOOD</p>
         <p className="text-[10px] uppercase tracking-[0.2em] text-dim">
           Vente &amp; Gestion de Stock du Bois
         </p>

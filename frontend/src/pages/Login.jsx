@@ -44,10 +44,10 @@ export default function Login() {
         <div className="mb-6 text-center">
           <img
             src="/koudi-mark.svg"
-            alt="KOUDI STOCK"
+            alt="KOUDI WOOD"
             className="mx-auto h-14 w-14 rounded-2xl shadow-lg shadow-black/40 ring-1 ring-amber/40"
           />
-          <h1 className="font-display mt-4 text-2xl font-bold tracking-tight text-frost">KOUDI STOCK</h1>
+          <h1 className="font-display mt-4 text-2xl font-bold tracking-tight text-frost">KOUDI WOOD</h1>
           <p className="text-sm text-ash">Vente &amp; Gestion de Stock du Bois</p>
         </div>
 

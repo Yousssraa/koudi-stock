@@ -960,7 +960,7 @@ class PriceTier(models.Model):
 class CompanyProfile(models.Model):
     """Singleton holding the real company identity (KOUDI) used by PDF docs."""
 
-    name = models.TextField(default="KOUDI STOCK")
+    name = models.TextField(default="KOUDI WOOD")
     tagline = models.TextField(default="Vente & Gestion de Stock du Bois")
     address = models.TextField(blank=True, default="")
     phone = models.CharField(max_length=50, blank=True, default="")

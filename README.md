@@ -1,4 +1,4 @@
-# KOUDI STOCK — Wood Sales & Inventory Management
+# KOUDI WOOD — Wood Sales & Inventory Management
 
 Full-stack timber sales & stock management app (Moroccan timber market, priced in MAD/m³).
 
@@ -36,7 +36,7 @@ Le compte `demo` est créé par `python seed_demo.py` (idempotent).
 ## Project layout
 
 ```
-KOUDI STOCK/
+KOUDI WOOD/
 ├── backend/            Django REST API
 │   ├── koudi_backend/  project settings/urls (whitenoise static serving)
 │   ├── stock/          models, serializers, views, services
@@ -341,7 +341,7 @@ la base Supabase existante.
 ### 1. Pousser le code sur GitHub
 
 ```bash
-git init && git add . && git commit -m "KOUDI STOCK"
+git init && git add . && git commit -m "KOUDI WOOD"
 git remote add origin https://github.com/<vous>/koudi-stock.git
 git push -u origin main
 ```

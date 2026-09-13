@@ -1,4 +1,4 @@
-"""Seed realistic Moroccan timber wholesaler data (KOUDI STOCK, Casablanca).
+"""Seed realistic Moroccan timber wholesaler data (KOUDI WOOD, Casablanca).
 
 ``python manage.py seed_timber_data`` populates, idempotently (add-only):
   - four flagship products with real market dimensions & volumes, priced in MAD
@@ -6,7 +6,7 @@
     Contreplaqué Okoumé panel);
   - two authentic clients (with ICE identifiers) and one import supplier
     (SIMBONOR — Port de Casablanca);
-  - the KOUDI STOCK SARL company profile metadata; and
+  - the KOUDI WOOD company profile metadata; and
   - fifteen back-office Bons de Livraison (``BL-2026-09-001 … 015``) spread
     across the realistic statuses (Validé & Chargé / En Attente / Facturé /
     Annulé / Livré).
@@ -47,10 +47,10 @@ def _aw(d, t):
 
 
 class Command(BaseCommand):
-    help = "Seed realistic KOUDI STOCK timber data (products, clients, supplier, 15 Bons de Livraison)."
+    help = "Seed realistic KOUDI WOOD timber data (products, clients, supplier, 15 Bons de Livraison)."
 
     def handle(self, *args, **options):
-        self.stdout.write("Seeding realistic timber data (KOUDI STOCK)…")
+        self.stdout.write("Seeding realistic timber data (KOUDI WOOD)…")
 
         wh = Warehouse.objects.filter(code="WH-CASABLANCA").first()
         if not wh:
@@ -354,20 +354,20 @@ class Command(BaseCommand):
             self.stdout.write(f"  + BL {bl_number} [{status}]")
 
         # ------------------------------------------------------------------
-        # 8. KOUDI STOCK SARL company metadata
+        # 8. KOUDI WOOD company metadata
         # ------------------------------------------------------------------
         p = CompanyProfile.current()
-        p.name = "KOUDI STOCK SARL"
+        p.name = "KOUDI WOOD"
         p.tagline = "Négoce & Importation de Bois — Casablanca"
         p.address = "Zone Industrielle Lissasba, Rue des Bois, Casablanca"
         p.phone = "0677-580205"
-        p.email = "contact@koudistock.ma"
+        p.email = "contact@koudiwood.ma"
         p.ice = "003124567000012"
         p.registre_commerce = "489201 Casablanca"
         p.identifiant_fiscal = "52891034"
         p.patente = "34109823"
         p.save()
-        self.stdout.write("  + CompanyProfile -> KOUDI STOCK SARL")
+        self.stdout.write("  + CompanyProfile -> KOUDI WOOD")
 
         # ------------------------------------------------------------------
         # 9. Grille de prix de référence (Tarifs & Prix)

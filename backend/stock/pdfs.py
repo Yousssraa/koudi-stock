@@ -43,7 +43,7 @@ def _company():
         f"RC : {p.registre_commerce}" if p.registre_commerce else None,
     ]
     return {
-        "name": p.name or "KOUDI STOCK",
+        "name": p.name or "KOUDI WOOD",
         "tagline": p.tagline or "Vente & Gestion de Stock du Bois",
         "address": (p.address or "").strip(),
         "contact": "  ·  ".join(b for b in contact_bits if b),
@@ -1034,7 +1034,7 @@ def build_label_pdf(product, warehouse, total_qty=1, copies_per_label=2):
 
                 c.setFillColor(colors.HexColor("#74482a"))
                 c.setFont("Helvetica-Bold", 7.5)
-                c.drawString(tx, ty - 2 * mm, "KOUDI STOCK — LOT")
+                c.drawString(tx, ty - 2 * mm, "KOUDI WOOD — LOT")
 
                 c.setFillColor(colors.HexColor("#3b2f23"))
                 c.setFont("Helvetica-Bold", 8.5)
