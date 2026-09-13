@@ -81,4 +81,22 @@ recherche d'images Bing, une image au format WebP transmise directement (base64)
 | `bois-blanc-epicea.webp` | Bois blanc — Épicéa / Sapin du Nord | Aperçu Bing (recherche d'image) |
 | `essences-nobles.webp` | Essences nobles — Chêne, Hêtre, Frêne, Noyer | Fourni par le client (WebP) |
 
+## Photos des Actualités (remplacement par des photos Wikimedia)
+
+Photos réelles ajoutées pour illustrer les 8 articles de la page Actualités.
+Les sources initiales fournies par le client (URLs Bing + WebP base64) ont été
+perdues ; remplacées par des photos contextualisées de **Wikimedia Commons**
+(vérifiées via l'API : auteur, licence, type `image/jpeg`).
+
+| Fichier | Article / usage | Auteur | Licence |
+| --- | --- | --- | --- |
+| `actu-chantiers-automne.jpg` | Les Chantiers d'Automne (réserve de troncs bois) | Kritzolina | CC BY-SA 4.0 |
+| `actu-parquet-automne.jpg` | Chaleur, Élégance, Parquet (parquet lames hickory) | Loadmaster (David R. Tribble) | CC BY-SA 3.0 |
+| `actu-hetre-calvi.jpg` | Nouvel arrivage Hêtre Calvi (hêtre non étuvé) | Philipp Zinger | CC BY-SA 4.0 |
+| `actu-printemps.jpg` | Le Printemps fait germer vos projets (piles de bois) | John Winder | CC BY-SA 2.0 |
+| `actu-sveza.jpg` | Bakélisé SVEZA (panneaux de contreplaqué) | Downtowngal | CC BY-SA 4.0 |
+| `actu-coffrage.jpg` | Solutions de coffrage (coffrage béton escalier) | Mattes | CC BY-SA 3.0 |
+| `actu-stenvalls.jpg` | Bois rouge Stenvalls (rondins de pin sylvestre) | Radomianin | CC BY-SA 4.0 |
+| `actu-carrefour.jpg` | Carrefour International du Bois (hall foire du bois de Bâle, 1953) | Willy Pragher | CC BY 4.0 |
+
 Liens : https://commons.wikimedia.org
