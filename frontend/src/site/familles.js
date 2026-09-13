@@ -45,21 +45,21 @@ export const FAMILLES = [
         essence: "Fibres de bois · densité 500-800 kg/m³",
         description:
           "Panneau de fibres homogène, facile à usiner, peindre et vernir. Menuiserie, agencement, cuisine et décoration intérieure.",
-        image: "/wood/mdf-photo.jpg",
+        image: "/wood/exemple-mdf.jpg",
       },
       {
         name: "Contreplaqué OKOUMÉ",
         essence: "Âme okoumé · plis croisés",
         description:
           "Contreplaqué léger, stable et imputrescible. Idéal pour le mobilier, l'agencement et la caisserie. Formats standard 1,22 × 2,44 m.",
-        image: "/wood/contreplaque-okoume.jpg",
+        image: "/wood/exemple-okoume.jpg",
       },
       {
         name: "HDF (brut & laqué)",
         essence: "Fibres dures · plus dense que le MDF",
         description:
           "Panneau haute densité en décors chêne, hêtre, wenge, acajou ou teintes unies. Portes, menuiserie, emballage et agencement.",
-        image: "/wood/panneau-deco.jpg",
+        image: "/wood/exemple-hdf.jpg",
       },
     ],
   },

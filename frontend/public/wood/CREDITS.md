@@ -84,6 +84,18 @@ recherche d'images Bing, une image au format WebP transmise directement (base64)
 | `bois-blanc-epicea.webp` | Bois blanc — Épicéa / Sapin du Nord | Aperçu Bing (recherche d'image) |
 | `essences-nobles.webp` | Essences nobles — Chêne, Hêtre, Frêne, Noyer | Fourni par le client (WebP) |
 
+## Photos des exemples PANNEAUX DÉCORATIFS & INDUSTRIELS (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme PANNEAUX
+DÉCORATIFS & INDUSTRIELS (Boutique). Sources : un aperçu obtenu via la recherche
+d'images Bing, deux images au format WebP transmises directement (base64).
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `exemple-mdf.jpg` | MDF (brut, laqué, replaqué) | Aperçu Bing (recherche d'image) |
+| `exemple-okoume.jpg` | Contreplaqué OKOUMÉ | Fourni par le client (WebP) |
+| `exemple-hdf.jpg` | HDF (brut & laqué) | Fourni par le client (WebP) |
+
 ## Photos des Actualités (remplacement par des photos Wikimedia)
 
 Photos de la page Actualités.
