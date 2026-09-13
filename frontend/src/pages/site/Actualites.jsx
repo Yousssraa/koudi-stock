@@ -176,40 +176,35 @@ export default function Actualites() {
         </section>
       </Reveal>
 
-      {/* ARTICLES */}
-      <section className="mx-auto max-w-7xl px-4 py-14 lg:px-6">
-        <div className="space-y-12">
-          {ARTICLES.map((a, i) => (
-            <Reveal key={a.key} delay={(i % 4) * 90}>
-              <article className="group grid grid-cols-1 items-center gap-8 overflow-hidden rounded-3xl bg-panel p-6 ring-1 ring-line transition duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber/10 lg:grid-cols-2 lg:gap-12 lg:p-8">
-                <div className="overflow-hidden rounded-2xl">
+      {/* ARTICLES — mise en page type Comarbois : colonne unique centrée */}
+      <section className="mx-auto max-w-5xl px-4 py-16 lg:px-6">
+        <div className="space-y-20">
+          {ARTICLES.map((a) => (
+            <Reveal key={a.key}>
+              <article className="group">
+                <div className="text-center">
+                  <h3 className="font-display text-xl font-bold uppercase tracking-tight text-frost sm:text-2xl">
+                    <span className="border-b-4 border-amber pb-1">{a.title}</span>
+                  </h3>
+                  {(a.date || a.subtitle) && (
+                    <p className="mt-3 text-sm font-semibold text-ash">{a.date || a.subtitle}</p>
+                  )}
+                </div>
+                <Link to={a.href} className="mt-8 block overflow-hidden rounded-xl ring-1 ring-line">
                   <img
                     src={a.image}
                     alt={a.alt}
                     loading="lazy"
-                    className="aspect-[4/3] h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                    className="aspect-[16/9] h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
-                </div>
-                <div className={i % 2 === 0 ? "" : "lg:order-first"}>
-                  {a.date && (
-                    <p className="mb-2 inline-block rounded-full bg-amber/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber ring-1 ring-amber/20">
-                      {a.date}
-                    </p>
-                  )}
-                  <h3 className="font-display text-xl font-bold tracking-tight text-frost sm:text-2xl">
-                    <span className="border-b-4 border-amber pb-1">{a.title}</span>
-                  </h3>
-                  {a.subtitle && (
-                    <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-copper">
-                      {a.subtitle}
-                    </p>
-                  )}
-                  <p className="mt-4 text-justify text-sm leading-relaxed text-ash">{a.body}</p>
+                </Link>
+                <p className="mt-6 text-sm leading-relaxed text-ash sm:text-base">{a.body}</p>
+                <div className="mt-6">
                   <Link
                     to={a.href}
-                    className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber to-copper px-6 py-2.5 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+                    className="inline-block bg-amber px-10 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-copper"
                   >
-                    {a.linkLabel} →
+                    {a.linkLabel}
                   </Link>
                 </div>
               </article>
