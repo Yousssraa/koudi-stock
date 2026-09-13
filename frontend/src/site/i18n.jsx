@@ -38,7 +38,7 @@ const DICT = {
       actualites: "Actualités",
       equipe: "Notre Équipe",
       boutiques: "Boutique",
-      devis: "Devis &amp; Devis rapide",
+      devis: "Devis",
       contact: "Contact",
       espacePro: "Espace Pro",
     },
