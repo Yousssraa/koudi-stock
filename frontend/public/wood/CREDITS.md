@@ -120,6 +120,18 @@ d'images Bing.
 | `exemple-laine-roche.jpg` | Laine de roche | Aperçu Bing (recherche d'image) |
 | `exemple-etancheite.jpg` | Étanchéité bitumineuse | Aperçu Bing (recherche d'image) |
 
+## Photos des exemples AMÉNAGEMENT INTÉRIEUR (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme AMÉNAGEMENT
+INTÉRIEUR (Boutique). Sources : une image produit (parquet-deco.com), deux aperçus
+obtenus via la recherche d'images Bing.
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `exemple-parquet.jpg` | Parquet en chêne / hêtre | parquet-deco.com (`AdobeStock_81761775`) |
+| `exemple-lambris.jpg` | Lambris & habillages muraux | Aperçu Bing (recherche d'image) |
+| `exemple-plinthe.jpg` | Plinthes & quarts de rond | Aperçu Bing (recherche d'image) |
+
 ## Photos des Actualités (remplacement par des photos Wikimedia)
 
 Photos de la page Actualités.

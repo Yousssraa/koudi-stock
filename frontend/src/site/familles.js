@@ -135,21 +135,21 @@ export const FAMILLES = [
         essence: "Massif ou contrecollé",
         description:
           "Lames rainure-languette, naturellement robustes et élégantes. Pose collée, clouée ou flottante selon la structure.",
-        image: "/wood/chene.jpg",
+        image: "/wood/exemple-parquet.jpg",
       },
       {
         name: "Lambris & habillages muraux",
         essence: "Pin, sapin, essences fines",
         description:
           "Revêtements muraux et plafonds en lames ou panneaux, bruts ou rabotés, pour une ambiance chaleureuse et facile à entretenir.",
-        image: "/wood/menuiserie.jpg",
+        image: "/wood/exemple-lambris.jpg",
       },
       {
         name: "Plinthes & quarts de rond",
         essence: "Bois massif, MDF ou décor",
         description:
           "Finitions entre sol et mur qui accompagnent parquet et stratifié. Sections et essences variées, à peindre ou vernies.",
-        image: "/wood/menuiserie.jpg",
+        image: "/wood/exemple-plinthe.jpg",
       },
     ],
   },
