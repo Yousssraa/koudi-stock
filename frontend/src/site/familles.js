@@ -75,21 +75,21 @@ export const FAMILLES = [
         essence: "Pin, bouleau, peuplier, eucalyptus",
         description:
           "Panneau 2 faces film phénolique 170 g/m², antidérapant possible. Origines Finlande, Espagne, Brésil, Russie. Décoffrage facile, réutilisation optimisée.",
-        image: "/wood/contreplaque-bakelise.jpg",
+        image: "/wood/exemple-bakelise.jpg",
       },
       {
         name: "Poutres H20 & panneaux triplis",
         essence: "Bois résineux · système coffrage",
         description:
           "Poutres de coffrage réutilisables à grande portée, complétées de panneaux triple pli. Qualité et optimisation des coûts sur chantier.",
-        image: "/wood/bois-charpente.jpg",
+        image: "/wood/exemple-h20.jpg",
       },
       {
         name: "Madriers & bois de coffrage",
         essence: "Épicéa, pin maritime, pin radiata, grandis, sapin",
         description:
           "Bois massif de section importante pour les banches, butons et éléments de coffrage traditionnel en béton armé.",
-        image: "/wood/madrier-photo.jpg",
+        image: "/wood/exemple-madrier.jpg",
       },
     ],
   },

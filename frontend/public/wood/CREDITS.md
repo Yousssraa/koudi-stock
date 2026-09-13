@@ -96,6 +96,18 @@ d'images Bing, deux images au format WebP transmises directement (base64).
 | `exemple-okoume.jpg` | Contreplaqué OKOUMÉ | Fourni par le client (WebP) |
 | `exemple-hdf.jpg` | HDF (brut & laqué) | Fourni par le client (WebP) |
 
+## Photos des exemples PRODUITS DE COFFRAGE (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme PRODUITS
+DE COFFRAGE (Boutique). Sources : deux aperçus obtenus via la recherche d'images
+Bing, une image au format WebP transmise directement (base64).
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `exemple-bakelise.jpg` | Contreplaqué filmé bakélisé | Aperçu Bing (recherche d'image) |
+| `exemple-h20.jpg` | Poutres H20 & panneaux triplis | Aperçu Bing (recherche d'image) |
+| `exemple-madrier.jpg` | Madriers & bois de coffrage | Fourni par le client (WebP) |
+
 ## Photos des Actualités (remplacement par des photos Wikimedia)
 
 Photos de la page Actualités.
