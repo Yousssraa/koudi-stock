@@ -190,7 +190,7 @@ export default function Actualites() {
                     <p className="mt-3 text-sm font-semibold text-ash">{a.date || a.subtitle}</p>
                   )}
                 </div>
-                <Link to={a.href} className="mt-8 block overflow-hidden rounded-xl ring-1 ring-line">
+                <Link to={a.href} className="mx-auto mt-8 block max-w-2xl overflow-hidden rounded-xl ring-1 ring-line">
                   <img
                     src={a.image}
                     alt={a.alt}
