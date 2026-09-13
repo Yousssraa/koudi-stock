@@ -69,4 +69,16 @@ l'original provient du site scieriejamet.fr).
 | `amenagement-exterieur.webp` | AMÉNAGEMENT EXTÉRIEUR | Aperçu Bing (recherche d'image) |
 | `tole-fer-beton.webp` | TÔLE & FER À BÉTON | Fourni par le client (WebP « TÔLE & FER À BÉTON ») |
 
+## Photos des exemples BOIS DE MENUISERIE & INDUSTRIELS (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme BOIS DE
+MENUISERIE & INDUSTRIELS (Boutique). Sources : deux aperçus obtenus via la
+recherche d'images Bing, une image au format WebP transmise directement (base64).
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `bois-rouge-pin.webp` | Bois rouge — Pin sylvestre | Aperçu Bing (recherche d'image) |
+| `bois-blanc-epicea.webp` | Bois blanc — Épicéa / Sapin du Nord | Aperçu Bing (recherche d'image) |
+| `essences-nobles.webp` | Essences nobles — Chêne, Hêtre, Frêne, Noyer | Fourni par le client (WebP) |
+
 Liens : https://commons.wikimedia.org

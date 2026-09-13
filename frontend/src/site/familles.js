@@ -15,21 +15,21 @@ export const FAMILLES = [
         essence: "Essence Pin sylvestre · Provenance Suède, Finlande",
         description:
           "Bois résineux au veinage rougeâtre, sec à 18 %. Menuiserie intérieure et extérieure, charpente, coffrage, ébénisterie. Densité ≈ 470 kg/m³.",
-        image: "/wood/pin-sylvestre.jpg",
+        image: "/wood/bois-rouge-pin.webp",
       },
       {
         name: "Bois blanc — Épicéa / Sapin du Nord",
         essence: "Essence Épicéa · Provenance Nord de l'Europe",
         description:
           "Bois tendre, clair et léger. Menuiserie intérieure et extérieure, cadres de portes et fenêtres, lamellé-collé, emballages et ossature bois.",
-        image: "/wood/epicea.jpg",
+        image: "/wood/bois-blanc-epicea.webp",
       },
       {
         name: "Essences nobles — Chêne, Hêtre, Frêne, Noyer",
         essence: "Provenances France, Europe, Amérique du Nord",
         description:
           "Feuillus durs (chêne ≈ 710 kg/m³, hêtre ≈ 680 kg/m³) pour la menuiserie de précision, le mobilier, l'agencement et les parquets.",
-        image: "/wood/chene.jpg",
+        image: "/wood/essences-nobles.webp",
       },
     ],
   },
