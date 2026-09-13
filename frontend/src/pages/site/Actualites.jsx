@@ -5,17 +5,6 @@ import Reveal from "../../site/Reveal.jsx";
 
 const ARTICLES = [
   {
-    key: "fourmi",
-    title: "LA FOURMI AVAIT RAISON",
-    date: "Hiver 2026",
-    image: "/wood/bois-charpente.jpg",
-    alt: "Stock de bois prêt à l'emploi dans nos dépôts",
-    href: "/produits",
-    linkLabel: "+ D'infos",
-    body:
-      "Anticiper, stocker, avancer. L'hiver ne ralentit pas ceux qui ont fait les bons choix. Avec KOUDI WOOD, vos projets gardent le rythme grâce à des matériaux disponibles immédiatement et un accompagnement fiable, du premier besoin à la livraison.",
-  },
-  {
     key: "chantiers-automne",
     title: "LES CHANTIERS D'AUTOMNE",
     date: "Automne 2025",
@@ -25,17 +14,6 @@ const ARTICLES = [
     linkLabel: "+ D'infos",
     body:
       "Chez KOUDI WOOD on a le choix ! Nous mettons à votre disposition une large sélection de bois adaptés à chaque besoin : bois de coffrage BTP pour vos grands projets, bois rouge pour une menuiserie solide, bois dur pour des finitions raffinées, pin d'Oregon pour sa couleur et sa fiabilité, et bois exotiques pour allier élégance et résistance. En cette nouvelle saison, zoom sur le bois !",
-  },
-  {
-    key: "color-your-life",
-    title: "COLOR YOUR LIFE",
-    subtitle: "KOUDI WOOD, le bois en couleurs",
-    image: "/wood/bois-blanc.jpg",
-    alt: "Diversité des essences de bois",
-    href: "/produits",
-    linkLabel: "+ D'infos",
-    body:
-      "Nos fardeaux de bois ne sont pas seulement une ressource brute, ce sont des palettes d'opportunités. Chaque teinte vive représente la diversité des essences et des usages possibles. Derrière ces couleurs, il y a la promesse d'un bois robuste, fiable et prêt à répondre aux besoins les plus exigeants de vos projets.",
   },
   {
     key: "parquet-automne",
@@ -82,28 +60,6 @@ const ARTICLES = [
       "Robuste, durable et ultra-polyvalent, le bakélisé SVEZA est votre allié idéal pour la construction, la carrosserie et même l'événementiel. Avec sa résistance exceptionnelle et sa finition haut de gamme, il garantit des résultats impeccables.",
   },
   {
-    key: "gladiator",
-    title: "LE BOIS DE L'ARÈNE DE GLADIATOR 2, IMPORTÉ PAR KOUDI WOOD",
-    subtitle: "Notre bois, star des plus grandes productions !",
-    image: "/wood/pin-sylvestre.jpg",
-    alt: "Bois utilisé pour des constructions de prestige",
-    href: "/produits",
-    linkLabel: "+ D'infos",
-    body:
-      "Nous sommes fiers d'annoncer que le bois utilisé pour construire l'arène emblématique du film Gladiator 2 provient de nos dépôts. Participer à un projet aussi prestigieux dans le monde du cinéma est une immense fierté pour nous et témoigne de la confiance que nos partenaires placent en nos matériaux et en notre engagement.",
-  },
-  {
-    key: "dibetou",
-    title: "NOUVEL ARRIVAGE DIBETOU",
-    subtitle: "Le bois d'exception pour des créations uniques",
-    image: "/wood/dibetou.jpg",
-    alt: "Bois exotique Dibetou",
-    href: "/produits",
-    linkLabel: "+ D'infos",
-    body:
-      "Découvrez le nouvel arrivage de Dibetou chez KOUDI WOOD, l'essence exotique qui allie charme et durabilité. Originaire d'Afrique, ce bois exotique raffiné séduit par son veinage unique et sa robustesse. Il est prisé pour l'ébénisterie et la menuiserie haut de gamme, tant en intérieur qu'en extérieur.",
-  },
-  {
     key: "coffrage",
     title: "LE MEILLEUR DES SOLUTIONS DE COFFRAGE CHEZ KOUDI WOOD",
     subtitle: "Des solutions de coffrage à la hauteur de vos projets",
@@ -134,17 +90,6 @@ const ARTICLES = [
     linkLabel: "+ D'infos",
     body:
       "Les panneaux OSB sont développés et fabriqués entièrement en conformité avec la demande actuelle d'un mode de vie écologique axé sur les matériaux organiques. Un produit que l'on peut utiliser pour les murs, sols, toits, cages d'escaliers, palissades, éléments de décoration dans les espaces intérieurs, en guise de revêtements et aussi de cloisons. Arrivages réguliers dans nos dépôts.",
-  },
-  {
-    key: "valchromat",
-    title: "LA NOUVELLE COULEUR WHITE PEARL DE VALCHROMAT",
-    subtitle: "Le blanc qui défie l'impossible",
-    image: "/wood/mdf-photo.jpg",
-    alt: "Panneau Valchromat coloré",
-    href: "/produits",
-    linkLabel: "+ D'infos",
-    body:
-      "Le valchromat est un panneau de fibres de bois colorées dans la masse permettant la réalisation de travaux tridimensionnels. Cette nouvelle teinte claire vous permettra de créer des espaces et des pièces qui allient esthétique et responsabilité environnementale. Chez KOUDI WOOD, la nouvelle couleur White Pearl sera disponible sur commande.",
   },
   {
     key: "chene",
