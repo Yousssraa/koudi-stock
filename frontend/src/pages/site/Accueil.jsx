@@ -13,7 +13,7 @@ const PRODUCT_FAMILIES = [
     title: "BOIS DE MENUISERIE & INDUSTRIELS",
     d: "KOUDI WOOD propose une large variété de bois venant de diverses régions du monde. Bois rouge, blanc, madriers de construction, pin, bois exotiques ou bois durs, nous sommes en mesure de répondre à tous vos besoins.",
     img: "/wood/menuiserie.jpg",
-    to: "/categorie/Bois rouge",
+    to: "/categorie/Bois Massif",
   },
   {
     title: "PANNEAUX DÉCORATIFS & INDUSTRIELS",
@@ -25,7 +25,7 @@ const PRODUCT_FAMILIES = [
     title: "PRODUITS DE COFFRAGE",
     d: "KOUDI WOOD figure parmi les premiers importateurs à avoir proposé à l'industrie de la construction marocaine, le système de coffrage à l'aide de Poutres H20 et de Panneaux Triplis.",
     img: "/wood/coffrage-new.jpg",
-    to: "/categorie/Coffrage",
+    to: "/categorie/Bois de Coffrage",
   },
   {
     title: "ISOLATION & ÉTANCHÉITÉ",

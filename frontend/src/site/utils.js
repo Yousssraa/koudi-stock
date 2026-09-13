@@ -25,6 +25,11 @@ const CATEGORY_IMAGE = {
   "Bois blanc": "/wood/bois-blanc.jpg",
   "Bois exotique": "/wood/iroko.jpg",
   "Bois noble": "/wood/chene.jpg",
+  "Bois Massif": "/wood/menuiserie.jpg",
+  "Bois de Coffrage": "/wood/coffrage.jpg",
+  "Aménagement Extérieur": "/wood/amenagement-ext.jpg",
+  "Cuisine & Aménagement": "/wood/amenagement-interieur.webp",
+  "Panneaux Portes": "/wood/panneau-deco.jpg",
   "Panneaux": "/wood/panneau-deco.jpg",
   "Coffrage": "/wood/coffrage.jpg",
 };
