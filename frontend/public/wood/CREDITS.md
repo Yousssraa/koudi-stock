@@ -37,18 +37,21 @@ dans ce dossier pour une démo hors-ligne). Sources : Wikimedia Commons.
 
 Photos réelles des gammes produits affichées dans la vitrine (Boutique / Accueil),
 stockées localement et vérifiées via l'API Wikimedia Commons (auteur, licence,
-type `image/jpeg`). Sources : Wikimedia Commons.
+type `image/jpeg`). Sources : Wikimedia Commons. Les six photos de vitrine
+`menuiserie.jpg`, `panneau-deco.jpg`, `coffrage-new.jpg`, `isolation.jpg`,
+`amenagement-ext.jpg` et `fer-a-beton.jpg` ont été **restaurées aux photos
+originales du client** (suppression des remplacements Wikimedia) à sa demande.
 
 | Fichier | Produit / usage | Auteur | Licence |
 | --- | --- | --- | --- |
-| `menuiserie.jpg` | Pile de planches de bois (bois de menuiserie) | David r jenkins | CC BY-SA 4.0 |
-| `panneau-deco.jpg` | Panneau MDF revêtu alu / panneaux décoratifs | Elke Wetzig (elya) | CC BY-SA 3.0 |
+| `menuiserie.jpg` | Pile de planches de bois (bois de menuiserie) | Photo client (originale restaurée) | — |
+| `panneau-deco.jpg` | Panneau MDF revêtu alu / panneaux décoratifs | Photo client (originale restaurée) | — |
+| `coffrage-new.jpg` | Coffrage béton acier + contreplaqué | Photo client (originale restaurée) | — |
+| `isolation.jpg` | Laine de verre sortant d'un mur | Photo client (originale restaurée) | — |
+| `amenagement-ext.jpg` | Lames de terrasse bois (keruing) après pluie | Photo client (originale restaurée) | — |
+| `fer-a-beton.jpg` | Fer à béton (rond) en gros plan sur chantier | Photo client (originale restaurée) | — |
 | `contreplaque-okoume.jpg` | Échantillon de bois OKOUMÉ (Gabunholz) | Philipp Zinger | CC BY-SA 4.0 |
-| `coffrage-new.jpg` | Coffrage béton acier + contreplaqué | Chicagoland Concrete, Inc. | CC BY-SA 4.0 |
 | `contreplaque-bakelise.jpg` | Panneaux de coffrage filmés (Formwork Destil) | Farina Destil | Public domain |
-| `isolation.jpg` | Laine de verre sortant d'un mur | Thomas Bresson | CC BY 3.0 |
-| `amenagement-ext.jpg` | Lames de terrasse bois (keruing) après pluie | Mikejamesshaw | CC BY-SA 4.0 |
-| `fer-a-beton.jpg` | Fer à béton (rond) en gros plan sur chantier | W.carter | CC BY-SA 4.0 |
 | `tole-acier.jpg` | Tôle d'acier galvanisée | Mojtabagholampour | CC BY-SA 4.0 |
 | `bac-acier.jpg` | Fixation de tôles ondulées en acier sur toiture | Collins, Tudor Washington (Auckland Museum) | CC BY 4.0 |
 
