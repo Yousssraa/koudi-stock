@@ -108,3 +108,12 @@ Les autres articles de la page sont illustrés par des photos contextualisées d
 | `actu-carrefour.jpg` | Carrefour International du Bois (hall foire du bois de Bâle, 1953) | Willy Pragher | CC BY 4.0 |
 
 Liens : https://commons.wikimedia.org
+
+## Arrière-plan des fiches PDF
+
+Photo d'illustration utilisée comme filigrane de fond des fiches produit PDF
+(`frontend/src/site/fiche.js`). Sources : recherche d'images Bing (aperçu).
+
+| Fichier | Usage | Source |
+| --- | --- | --- |
+| `bg-fiche.jpg` | Filigrane de fond des fiches produit PDF | Aperçu Bing (recherche d'image) |

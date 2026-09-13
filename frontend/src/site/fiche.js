@@ -7,6 +7,7 @@ const AMBER = [202, 138, 4];
 const INK = [28, 32, 46];
 const ASH = [90, 96, 117];
 const RULE = [220, 222, 232];
+const BG_OPACITY = 0.4;
 
 function slugify(name) {
   return name
@@ -18,12 +19,20 @@ function slugify(name) {
 }
 
 export async function downloadFiche({ fam, ex, detail, c = {}, qf = {} }) {
-  const { jsPDF } = await import("jspdf");
+  const { jsPDF, GState } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const contentW = W - PAD * 2;
   let y = PAD;
+
+  let bgImg = null;
+  try {
+    const res = await fetch("/wood/bg-fiche.jpg");
+    if (res.ok) bgImg = new Uint8Array(await res.arrayBuffer());
+  } catch {
+    bgImg = null;
+  }
 
   const ensure = (need) => {
     if (y + need > H - PAD) {
@@ -34,6 +43,11 @@ export async function downloadFiche({ fam, ex, detail, c = {}, qf = {} }) {
   };
 
   const footer = () => {
+    if (bgImg) {
+      doc.setGState(new GState({ opacity: BG_OPACITY }));
+      doc.addImage(bgImg, "JPEG", 0, 0, W, H, undefined, "FAST");
+      doc.setGState(new GState({ opacity: 1 }));
+    }
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...ASH);
