@@ -137,13 +137,25 @@ const ARTICLES = [
   },
 ];
 
+/* Comarbois utilise le style Woodmart « wd-underline-colored » :
+   un liseré de couleur accent sous le titre. */
+function UnderlinedTitle({ children, className = "", bar = "after:bg-amber" }) {
+  return (
+    <span
+      className={`relative inline-block pb-2.5 after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:content-[''] after:transition-colors ${bar} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export default function Actualites() {
   useDocumentTitle("KOUDI WOOD — Actualités");
   const t = useT();
 
   return (
     <div>
-      {/* BANNER / BREADCRUMB */}
+      {/* BANNER / BREADCRUMB — hero centré type Comarbois (title-design-centered) */}
       <section
         className="relative flex min-h-[38vh] items-center justify-center bg-cover bg-center"
         style={{ backgroundImage: "url(/wood/chene.jpg)", backgroundColor: "#5c1420" }}
@@ -164,32 +176,40 @@ export default function Actualites() {
         </Reveal>
       </section>
 
-      {/* INTRO — titre centré type Comarbois */}
+      {/* TITRE DE SECTION — centré, soulignement accentué type Comarbois */}
       <Reveal>
-        <section className="mx-auto max-w-7xl px-4 pt-14 lg:px-6">
-          <h2 className="text-center font-display text-2xl font-bold tracking-tight text-frost sm:text-3xl">
-            What's up chez KOUDI WOOD ?
+        <section className="mx-auto max-w-7xl px-4 pt-16 lg:px-6">
+          <h2 className="text-center font-display text-2xl font-bold uppercase tracking-tight text-frost sm:text-3xl">
+            <UnderlinedTitle bar="after:bg-copper after:h-1">Quoi de neuf chez KOUDI WOOD ?</UnderlinedTitle>
           </h2>
         </section>
       </Reveal>
 
-      {/* ARTICLES — mise en page type Comarbois : colonne unique centrée,
-          cartes pleine largeur empilées : titre centré, mention de saison,
-          image arrondie centrée, corps de texte, bouton carré sombre "+ D'infos" */}
+      {/* ARTICLES — structure fidèle à la page News de Comarbois :
+          colonne unique centrée, chaque rubrique = titre centré souligné
+          (wd-underline-colored) + mention de saison + tagline small +
+          image centrée arrondie à bordure grise (vc_box_rounded /
+          vc_box_border_grey) + texte + bouton carré pleine teinte */}
       <section className="mx-auto max-w-5xl px-4 py-16 lg:px-6">
         <div className="space-y-20">
           {ARTICLES.map((a) => (
             <Reveal key={a.key}>
-              <article className="group">
-                <div className="text-center">
-                  <h3 className="font-display text-xl font-bold uppercase tracking-tight text-frost sm:text-2xl">
-                    {a.title}
-                  </h3>
-                  {(a.date || a.subtitle) && (
-                    <p className="mt-3 text-sm text-dim">{a.date || a.subtitle}</p>
-                  )}
-                </div>
-                <Link to={a.href} className="mx-auto mt-8 block max-w-2xl overflow-hidden rounded ring-1 ring-line">
+              <article className="text-center">
+                {a.date && (
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amberl">
+                    {a.date}
+                  </p>
+                )}
+                <h3 className="mt-4 font-display text-xl font-bold uppercase tracking-tight text-frost sm:text-2xl">
+                  <UnderlinedTitle>{a.title}</UnderlinedTitle>
+                </h3>
+                {a.subtitle && (
+                  <p className="mt-3 text-sm text-dim">{a.subtitle}</p>
+                )}
+                <Link
+                  to={a.href}
+                  className="group mx-auto mt-8 block max-w-3xl overflow-hidden rounded-lg border border-line bg-panel shadow-sm transition hover:border-amberl"
+                >
                   <img
                     src={a.image}
                     alt={a.alt}
@@ -197,11 +217,13 @@ export default function Actualites() {
                     className="aspect-[16/9] h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
                 </Link>
-                <p className="mt-6 text-justify text-sm leading-relaxed text-ash sm:text-base">{a.body}</p>
-                <div className="mt-6 text-center">
+                <p className="mx-auto mt-6 max-w-3xl text-justify text-sm leading-relaxed text-ash sm:text-base">
+                  {a.body}
+                </p>
+                <div className="mt-7">
                   <Link
                     to={a.href}
-                    className="inline-block rounded-none bg-copper px-8 py-3 text-sm font-semibold text-white transition hover:bg-amber"
+                    className="inline-block rounded-none bg-copper px-9 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:bg-amber"
                   >
                     {a.linkLabel}
                   </Link>
