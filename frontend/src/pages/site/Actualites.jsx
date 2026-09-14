@@ -189,11 +189,14 @@ export default function Actualites() {
           colonne unique centrée, chaque rubrique = titre centré souligné
           (wd-underline-colored) + mention de saison + tagline small +
           image centrée arrondie à bordure grise (vc_box_rounded /
-          vc_box_border_grey) + texte + bouton carré pleine teinte */}
+          vc_box_border_grey) + texte + bouton carré pleine teinte.
+          Animations fidèles à Comarbois (Woodmart/WPBakery) : chaque bloc
+          glisse depuis le bas (wd-slide-from-bottom .7s), l'image zoome
+          (zoomIn, delay 0,1 s), le bouton rebondit (bounceIn, delay 0,3 s). */}
       <section className="mx-auto max-w-5xl px-4 py-16 lg:px-6">
         <div className="space-y-20">
           {ARTICLES.map((a) => (
-            <Reveal key={a.key}>
+            <Reveal key={a.key} animation="slide-from-bottom">
               <article className="text-center">
                 {a.date && (
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amberl">
@@ -206,28 +209,34 @@ export default function Actualites() {
                 {a.subtitle && (
                   <p className="mt-3 text-sm text-dim">{a.subtitle}</p>
                 )}
-                <Link
-                  to={a.href}
-                  className="group mx-auto mt-8 block max-w-3xl overflow-hidden rounded-lg border border-line bg-panel shadow-sm transition hover:border-amberl"
+                <Reveal
+                  animation="zoom-in"
+                  delay={100}
+                  className="mx-auto mt-8 block max-w-3xl"
                 >
-                  <img
-                    src={a.image}
-                    alt={a.alt}
-                    loading="lazy"
-                    className="aspect-[16/9] h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                </Link>
+                  <Link
+                    to={a.href}
+                    className="group block overflow-hidden rounded-lg border border-line bg-panel shadow-sm transition hover:border-amberl"
+                  >
+                    <img
+                      src={a.image}
+                      alt={a.alt}
+                      loading="lazy"
+                      className="aspect-[16/9] h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  </Link>
+                </Reveal>
                 <p className="mx-auto mt-6 max-w-3xl text-justify text-sm leading-relaxed text-ash sm:text-base">
                   {a.body}
                 </p>
-                <div className="mt-7">
+                <Reveal animation="bounce-in" delay={300} className="mt-7">
                   <Link
                     to={a.href}
                     className="inline-block rounded-none bg-copper px-9 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:bg-amber"
                   >
                     {a.linkLabel}
                   </Link>
-                </div>
+                </Reveal>
               </article>
             </Reveal>
           ))}

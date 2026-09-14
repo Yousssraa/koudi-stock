@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
+const KEYFRAME_ANIM = {
+  "slide-from-bottom": "kw-anim-slide-from-bottom",
+  "zoom-in": "kw-anim-zoom-in",
+  "bounce-in": "kw-anim-bounce-in",
+  "roll-in": "kw-anim-roll-in",
+  "rotate-in": "kw-anim-rotate-in",
+};
+
 export default function Reveal({
   children,
   className = "",
   delay = 0,
   as: Tag = "div",
   direction = "up",
+  animation = "",
 }) {
   const ref = useRef(null);
   const [shown, setShown] = useState(false);
@@ -27,6 +36,19 @@ export default function Reveal({
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  if (animation && KEYFRAME_ANIM[animation]) {
+    const animClass = KEYFRAME_ANIM[animation];
+    return (
+      <Tag
+        ref={ref}
+        className={`${className} kw-anim ${shown ? `kw-shown ${animClass}` : ""}`}
+        style={{ animationDelay: shown ? `${delay}ms` : "0ms" }}
+      >
+        {children}
+      </Tag>
+    );
+  }
 
   const hidden =
     direction === "up"

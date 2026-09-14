@@ -82,6 +82,118 @@ body {
   animation: marquee 40s linear infinite;
 }
 
+/* Animations portées de la page Actualités de Comarbois
+   (Woodmart + WPBakery) : wd-slide-from-bottom .7s cubic-bezier(0,0.87,0.58,1),
+   images en zoomIn, boutons en bounceIn (Animate.css). */
+@keyframes wd-slide-from-bottom {
+  from {
+    transform: translate3d(0, 150px, 0);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes kw-zoom-in {
+  0% {
+    opacity: 0;
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes kw-bounce-in {
+  0%,
+  20%,
+  40%,
+  60%,
+  80%,
+  100% {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  0% {
+    opacity: 0;
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+  20% {
+    transform: scale3d(1.1, 1.1, 1.1);
+  }
+  40% {
+    transform: scale3d(0.9, 0.9, 0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: scale3d(1.03, 1.03, 1.03);
+  }
+  80% {
+    transform: scale3d(0.97, 0.97, 0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes kw-roll-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(-100%, 0, 0) rotate3d(0, 0, 1, -120deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes kw-rotate-in {
+  0% {
+    transform-origin: center;
+    transform: rotate3d(0, 0, 1, -200deg);
+    opacity: 0;
+  }
+  100% {
+    transform-origin: center;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.kw-anim {
+  opacity: 0;
+}
+
+.kw-anim.kw-shown {
+  opacity: 1;
+}
+
+.kw-anim-slide-from-bottom {
+  animation: wd-slide-from-bottom 0.7s cubic-bezier(0, 0.87, 0.58, 1) both;
+}
+
+.kw-anim-zoom-in {
+  animation: kw-zoom-in 1s ease both;
+}
+
+.kw-anim-bounce-in {
+  animation: kw-bounce-in 1s ease both;
+}
+
+.kw-anim-roll-in {
+  animation: kw-roll-in 1s ease both;
+}
+
+.kw-anim-rotate-in {
+  animation: kw-rotate-in 1s ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee {
     animation: none;
@@ -89,5 +201,9 @@ body {
   .transition-all,
   .will-change-transform {
     transition: none !important;
+  }
+  .kw-anim {
+    opacity: 1 !important;
+    animation: none !important;
   }
 }
