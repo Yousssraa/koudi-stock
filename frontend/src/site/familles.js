@@ -165,21 +165,21 @@ export const FAMILLES = [
         essence: "Pin sylvestre · traitement autoclave marron/vert",
         description:
           "Environ 27 × 145 mm. Résiste à l'humidité et aux insectes, teinte brune qui limite l'entretien. Durée de vie de 20 ans et plus.",
-        image: "/wood/amenagement-ext.jpg",
+        image: "/wood/exemple-terrasse-autoclave.jpg",
       },
       {
         name: "Lame de terrasse bois exotique",
         essence: "Ipé, Cumaru, Bangkirai, Padouk · classe 5",
         description:
           "Essences naturellement durables, très denses, patine gris argenté avec le temps. Le choix haut de gamme pour terrasses sur pilotis.",
-        image: "/wood/iroko.jpg",
+        image: "/wood/exemple-terrasse-exotique.jpg",
       },
       {
         name: "Bardage & palissade",
         essence: "Pin / sapin traité classe 3-4",
         description:
           "Lames de bardage ventilé et éléments de clôture, autoclave vert ou brun, pour façades, carports et aménagements de jardin.",
-        image: "/wood/epicea.jpg",
+        image: "/wood/exemple-bardage.jpg",
       },
     ],
   },

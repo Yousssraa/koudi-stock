@@ -132,6 +132,18 @@ obtenus via la recherche d'images Bing.
 | `exemple-lambris.jpg` | Lambris & habillages muraux | Aperçu Bing (recherche d'image) |
 | `exemple-plinthe.jpg` | Plinthes & quarts de rond | Aperçu Bing (recherche d'image) |
 
+## Photos des exemples AMÉNAGEMENT EXTÉRIEUR (fournies par le client)
+
+Photos ajoutées à la demande du client pour les 3 exemples de la gamme AMÉNAGEMENT
+EXTÉRIEUR (Boutique). Sources : trois aperçus obtenus via la recherche d'images
+Bing.
+
+| Fichier | Exemple / usage | Source |
+| --- | --- | --- |
+| `exemple-terrasse-autoclave.jpg` | Lame de terrasse pin autoclave classe 4 | Aperçu Bing (recherche d'image) |
+| `exemple-terrasse-exotique.jpg` | Lame de terrasse bois exotique | Aperçu Bing (recherche d'image) |
+| `exemple-bardage.jpg` | Bardage & palissade | Aperçu Bing (recherche d'image) |
+
 ## Photos des Actualités (remplacement par des photos Wikimedia)
 
 Photos de la page Actualités.
