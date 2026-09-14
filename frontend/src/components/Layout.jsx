@@ -70,7 +70,14 @@ export default function Layout() {
             {item.label}
           </NavLink>
         ))}
-        <div className="px-4 pt-4">
+        <div className="space-y-2 px-4 pt-4">
+          <a
+            href="/"
+            className="flex items-center gap-3 rounded-xl border border-amber/30 px-4 py-2.5 text-sm font-medium text-amber transition hover:bg-amber/10"
+          >
+            <span aria-hidden className="text-base leading-none">🌐</span>
+            Voir le site
+          </a>
           <a
             href="/pro"
             className="flex items-center gap-3 rounded-xl border border-amber/30 px-4 py-2.5 text-sm font-medium text-amber transition hover:bg-amber/10"
