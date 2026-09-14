@@ -1158,10 +1158,12 @@ def build_catalog_pdf(products, grouped):
             Paragraph("PRIX (MAD)", head_style),
         ]]
         for p in prods:
-            une = (
-                f"{float(p.surface_m2):.2f} m²" if p.is_panel and p.surface_m2
-                else f"{float(p.volume_cubic_m):.3f} m³"
-            )
+            if p.is_panel and p.surface_m2:
+                une = f"{float(p.surface_m2):.2f} m²"
+            elif p.volume_cubic_m:
+                une = f"{float(p.volume_cubic_m):.3f} m³"
+            else:
+                une = "—"
             data.append([
                 Paragraph(p.sku or "", row_style),
                 Paragraph(_esc(p.name), row_style),
