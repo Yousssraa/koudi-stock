@@ -86,13 +86,17 @@ def _pdf_response(pdf_bytes, filename):
 
 
 def _next_contact_code(model, prefix):
-    """Auto-numbered contact code (CLI-0001 / SUP-0001) when none supplied."""
-    last = model.objects.filter(code__startswith=f"{prefix}-").order_by("-code").first()
+    """Auto-numbered contact code (CLI-0001 / SUP-0001) when none supplied.
+
+    Only numeric-suffix codes (``CLI-0001``) are considered: named codes like
+    ``CLI-ATLAS`` exist in the seed data and must not be mistaken for the
+    highest sequence value (string ordering would otherwise pick e.g.
+    ``CLI-PARQUET``, fail to parse the suffix and fall back to ``CLI-0001`` —
+    which already exists and trips the unique constraint).
+    """
+    last = model.objects.filter(code__regex=rf"^{prefix}-\d{{4}}$").order_by("-code").first()
     if last is not None:
-        try:
-            return f"{prefix}-{int(last.code.rsplit('-', 1)[1]) + 1:04d}"
-        except (IndexError, ValueError):
-            pass
+        return f"{prefix}-{int(last.code.rsplit('-', 1)[1]) + 1:04d}"
     return f"{prefix}-0001"
 
 
