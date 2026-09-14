@@ -6,8 +6,9 @@ Stock level is surfaced only as a coarse ``stock_status`` ("in_stock" / "low" /
 "out_of_stock") so the boutique can badge availability without leaking exact,
 commercially sensitive quantities.
 """
+import os
 from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,7 +17,6 @@ from rest_framework.views import APIView
 from .audit import audit
 from .emails import notify_lead
 from .models import CompanyProfile, Lead, Product, WoodType
-from .pdfs import build_catalog_pdf
 from .serializers import (
     PublicCategorySerializer,
     PublicLeadSerializer,
@@ -290,32 +290,28 @@ class PublicLeadView(APIView):
         return Response({"id": lead.pk, "status": "received"}, status=status.HTTP_201_CREATED)
 
 
+_CATALOG_PATH = os.path.join(os.path.dirname(__file__), "data", "KOUDI-WOOD-Catalogue.pdf")
+
+
 class PublicCatalogView(APIView):
     """GET /api/public/catalog.pdf/ → downloadable PDF catalog of active products.
 
-    Products are grouped by category and priced per m³ (or m² for panels).
-    No cost price, margin or internal stock is exposed.
+    Serves a committed static PDF file (regenerate it with
+    ``manage.py generate_catalog`` when products/prices change).
 
-    The PDF is pre-generated at Django startup (see ``apps.py``) and served
-    from an in-memory cache so that every HTTP request is instant — avoiding
-    Render free tier's 60-second gateway timeout.
+    The file is served instantly and works on every cold start — generation
+    happens off the request path, so Render free tier's 60-second gateway
+    timeout can never cut this endpoint.
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
-        from .apps import catalog_pdf_bytes
-        payload = catalog_pdf_bytes()
-        if payload is None:
-            return HttpResponse(
-                "Le catalogue est en cours de génération, veuillez réessayer dans quelques secondes.",
-                status=503,
-            )
-        return HttpResponse(
-            payload, content_type="application/pdf",
-            headers={
-                "Content-Disposition": 'attachment; filename="KOUDI-WOOD-Catalogue.pdf"',
-                "Cache-Control": "public, max-age=3600",
-            },
+        return FileResponse(
+            open(_CATALOG_PATH, "rb"),
+            content_type="application/pdf",
+            as_attachment=True,
+            filename="KOUDI-WOOD-Catalogue.pdf",
+            headers={"Cache-Control": "public, max-age=3600"},
         )
 
