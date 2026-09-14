@@ -183,34 +183,4 @@ export const FAMILLES = [
       },
     ],
   },
-  {
-    key: "tole-fer-beton",
-    label: "TÔLE & FER À BÉTON",
-    image: "/wood/tole-fer-beton.webp",
-    description:
-      "Acier de gros œuvre : rond à béton haute adhérence, tôles planes et bacs acier pour la construction.",
-    examples: [
-      {
-        name: "Fer à béton (rond HLE)",
-        essence: "Acier B500 · diamètres 6 à 25 mm",
-        description:
-          "Barres torsadées haute adhérence, longueurs 2 et 6 m, cintrables. Armatures et ferraillages du béton armé (dallages, semelles, chaînages).",
-        image: "/wood/fer-a-beton.jpg",
-      },
-      {
-        name: "Tôle acier plane",
-        essence: "Laminée à chaud ou à froid, galvanisée",
-        description:
-          "Plaques et feuilles d'acier pour planchers, capotages, chaudronnerie et fabrication métallique. Diverses épaisseurs et formats.",
-        image: "/wood/tole-acier.jpg",
-      },
-      {
-        name: "Bac acier nervuré",
-        essence: "Acier protégé anti-corrosion",
-        description:
-          "Tôles nervurées ou ondulées pour toiture et bardage, posées sur ossature bois ou métallique. Léger, rapide à mettre en œuvre.",
-        image: "/wood/bac-acier.jpg",
-      },
-    ],
-  },
 ];

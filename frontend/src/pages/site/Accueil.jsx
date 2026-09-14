@@ -39,12 +39,6 @@ const PRODUCT_FAMILIES = [
     img: "/wood/amenagement-ext.jpg",
     to: "/produits",
   },
-  {
-    title: "TÔLE & FER À BÉTON",
-    d: "Économique, résistante et se fixant facilement sur des chevrons en sapin, la tôle galvanisée ondulée est utilisée dans la construction de hangars, de palissades de chantiers en tant que couverture et bardage de bâtiments.",
-    img: "/wood/fer-a-beton.jpg",
-    to: "/produits",
-  },
 ];
 
 const STATS = [
