@@ -164,19 +164,18 @@ export default function Actualites() {
         </Reveal>
       </section>
 
-      {/* EYEBROW */}
+      {/* INTRO — titre centré type Comarbois */}
       <Reveal>
         <section className="mx-auto max-w-7xl px-4 pt-14 lg:px-6">
-          <p className="text-center text-xs font-bold uppercase tracking-[0.25em] text-amber">
+          <h2 className="text-center font-display text-2xl font-bold tracking-tight text-frost sm:text-3xl">
             What's up chez KOUDI WOOD ?
-          </p>
-          <h2 className="mt-2 text-center font-display text-2xl font-bold tracking-tight text-frost sm:text-3xl">
-            Les dernières actualités de l'enseigne
           </h2>
         </section>
       </Reveal>
 
-      {/* ARTICLES — mise en page type Comarbois : colonne unique centrée */}
+      {/* ARTICLES — mise en page type Comarbois : colonne unique centrée,
+          cartes pleine largeur empilées : titre centré, mention de saison,
+          image arrondie centrée, corps de texte, bouton carré sombre "+ D'infos" */}
       <section className="mx-auto max-w-5xl px-4 py-16 lg:px-6">
         <div className="space-y-20">
           {ARTICLES.map((a) => (
@@ -184,13 +183,13 @@ export default function Actualites() {
               <article className="group">
                 <div className="text-center">
                   <h3 className="font-display text-xl font-bold uppercase tracking-tight text-frost sm:text-2xl">
-                    <span className="border-b-4 border-amber pb-1">{a.title}</span>
+                    {a.title}
                   </h3>
                   {(a.date || a.subtitle) && (
-                    <p className="mt-3 text-sm font-semibold text-ash">{a.date || a.subtitle}</p>
+                    <p className="mt-3 text-sm text-dim">{a.date || a.subtitle}</p>
                   )}
                 </div>
-                <Link to={a.href} className="mx-auto mt-8 block max-w-2xl overflow-hidden rounded-xl ring-1 ring-line">
+                <Link to={a.href} className="mx-auto mt-8 block max-w-2xl overflow-hidden rounded ring-1 ring-line">
                   <img
                     src={a.image}
                     alt={a.alt}
@@ -198,11 +197,11 @@ export default function Actualites() {
                     className="aspect-[16/9] h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
                 </Link>
-                <p className="mt-6 text-sm leading-relaxed text-ash sm:text-base">{a.body}</p>
-                <div className="mt-6">
+                <p className="mt-6 text-justify text-sm leading-relaxed text-ash sm:text-base">{a.body}</p>
+                <div className="mt-6 text-center">
                   <Link
                     to={a.href}
-                    className="inline-block bg-amber px-10 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-copper"
+                    className="inline-block rounded-none bg-copper px-8 py-3 text-sm font-semibold text-white transition hover:bg-amber"
                   >
                     {a.linkLabel}
                   </Link>
