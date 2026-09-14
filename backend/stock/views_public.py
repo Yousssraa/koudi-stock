@@ -295,28 +295,27 @@ class PublicCatalogView(APIView):
 
     Products are grouped by category and priced per m³ (or m² for panels).
     No cost price, margin or internal stock is exposed.
+
+    The PDF is pre-generated at Django startup (see ``apps.py``) and served
+    from an in-memory cache so that every HTTP request is instant — avoiding
+    Render free tier's 60-second gateway timeout.
     """
 
     permission_classes = [AllowAny]
 
     def get(self, request):
-        qs = (
-            Product.objects.select_related("wood_type")
-            .prefetch_related("inventory_set")
-            .filter(is_active=True)
-            .order_by("name")
-        )
-        grouped = {}
-        for p in qs:
-            grouped.setdefault(p.category, []).append(p)
-
-        label = dict(Product.Category.choices)
-        groups = [(label.get(k, k), v) for k, v in grouped.items()]
-
-        payload = build_catalog_pdf(list(qs), groups)
-        filename = "KOUDI-WOOD-Catalogue.pdf"
+        from .apps import catalog_pdf_bytes
+        payload = catalog_pdf_bytes()
+        if payload is None:
+            return HttpResponse(
+                "Le catalogue est en cours de génération, veuillez réessayer dans quelques secondes.",
+                status=503,
+            )
         return HttpResponse(
             payload, content_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            headers={
+                "Content-Disposition": 'attachment; filename="KOUDI-WOOD-Catalogue.pdf"',
+                "Cache-Control": "public, max-age=3600",
+            },
         )
 
