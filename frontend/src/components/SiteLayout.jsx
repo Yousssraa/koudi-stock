@@ -318,33 +318,19 @@ function Footer() {
         </div>
       </div>
       <div className="border-t border-line">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-4 py-8 lg:grid-cols-3 lg:px-6">
-          <div>
-            <p className="font-display text-sm font-bold uppercase tracking-[0.15em] text-frost">Nous trouver</p>
-            <p className="mt-1 text-sm text-ash">{company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"}</p>
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber to-copper px-4 py-2 text-xs font-bold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
-            >
-              Itinéraire →
-            </a>
-          </div>
-          <div className="lg:col-span-2">
-            <iframe
-              title="Localisation KOUDI WOOD"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(
-                company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
-              )}&output=embed`}
-              className="h-[260px] w-full rounded-2xl border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          </div>
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 px-4 py-8 text-center lg:px-6">
+          <p className="font-display text-sm font-bold uppercase tracking-[0.15em] text-frost">Nous trouver</p>
+          <p className="text-sm text-ash">{company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"}</p>
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+              company?.address || "Bd Med Elyazidi, Hay Douma Sidi Moumen, Casablanca"
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber to-copper px-4 py-2 text-xs font-bold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110"
+          >
+            Itinéraire →
+          </a>
         </div>
       </div>
       <div className="border-t border-line py-4 text-center text-xs text-dim">
