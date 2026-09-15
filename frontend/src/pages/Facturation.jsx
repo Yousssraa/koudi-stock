@@ -17,11 +17,11 @@ const fmtDate = (s) => {
 };
 
 const PAY_BADGE = {
-  paid: "bg-emerald-400/10 text-emerald-300 ring-emerald-400/30",
-  awaited: "bg-sky-400/10 text-sky-300 ring-sky-400/30",
-  partial: "bg-amber-500/10 text-amber-300 ring-amber-500/30",
-  pending: "bg-slate-400/10 text-slate-300 ring-slate-400/30",
-  overdue: "bg-rose-400/10 text-rose-300 ring-rose-400/30",
+  paid: "bg-jade/10 text-jade ring-jade/30",
+  awaited: "bg-skyx/10 text-skyx ring-skyx/30",
+  partial: "bg-amber/10 text-amber ring-amber/30",
+  pending: "bg-raise text-ash ring-line",
+  overdue: "bg-rose/10 text-rose ring-rose/30",
 };
 const PAY_STATUS_CHIPS = [
   { key: "", label: "Toutes" },
@@ -55,18 +55,18 @@ function PayBadge({ status }) {
 }
 
 const inputCls =
-  "rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 outline-none transition focus:border-amber-500/70";
+  "rounded-lg border border-line bg-panel px-3 py-2 text-sm text-frost outline-none transition placeholder:text-dim focus:border-amber/60 focus:ring-2 focus:ring-amber/20";
 const btnPrimary =
-  "rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none";
+  "rounded-lg bg-gradient-to-r from-amber to-copper px-4 py-2 text-sm font-semibold text-ink shadow-lg shadow-amber/20 transition hover:brightness-110 disabled:opacity-50 disabled:pointer-events-none";
 const btnGhost =
-  "rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white disabled:opacity-50";
+  "rounded-lg border border-line bg-panel px-4 py-2 text-sm font-semibold text-ash transition hover:bg-raise hover:text-frost disabled:opacity-50";
 
 function SummaryCard({ label, value, accent, sub }) {
   return (
-    <div className="rounded-2xl bg-slate-800 p-4 shadow-lg shadow-black/20 ring-1 ring-slate-700/60">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+    <div className="rounded-2xl bg-panel p-4 shadow-lg shadow-black/5 ring-1 ring-line">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-dim">{label}</p>
       <p className={`font-display mt-1 text-xl font-bold ${accent}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-dim">{sub}</p>}
     </div>
   );
 }
@@ -306,11 +306,11 @@ export default function Facturation() {
     : invoices.filter((i) => i.client_id === Number(avoirForm.client_id));
 
   return (
-    <div className="-m-6 min-h-screen bg-slate-900 px-6 py-6 text-slate-200 lg:-m-8">
+    <div className="-m-6 min-h-screen bg-ink px-6 py-6 text-frost lg:-m-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-white">Facturation</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-frost">Facturation</h1>
+          <p className="text-sm text-dim">
             Regroupement des bons de livraison, factures légales TVA 20 %, avoirs et relances.
           </p>
         </div>
@@ -328,7 +328,7 @@ export default function Facturation() {
       </header>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-slate-800 p-1 ring-1 ring-slate-700/60">
+      <div className="mb-6 flex gap-1 rounded-xl bg-panel p-1 ring-1 ring-line/60">
         {[
           { key: "factures", label: "Factures" },
           { key: "regroupement", label: "Facturer des BL" },
@@ -339,8 +339,8 @@ export default function Facturation() {
             onClick={() => setTab(t.key)}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
               tab === t.key
-                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900"
-                : "text-slate-400 hover:text-white"
+                ? "bg-gradient-to-r from-amber to-copper text-ink"
+                : "text-dim hover:text-frost"
             }`}
           >
             {t.label}
@@ -353,26 +353,26 @@ export default function Facturation() {
           {/* Summary */}
           {summary && (
             <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <SummaryCard label="Total facturé" value={`${fmt(summary.total_invoiced)} MAD`} accent="text-white" />
-              <SummaryCard label="Solde à recouvrer" value={`${fmt(summary.total_balance)} MAD`} accent="text-amber-400" />
+              <SummaryCard label="Total facturé" value={`${fmt(summary.total_invoiced)} MAD`} accent="text-frost" />
+              <SummaryCard label="Solde à recouvrer" value={`${fmt(summary.total_balance)} MAD`} accent="text-amber" />
               <SummaryCard
                 label="En retard"
                 value={`${fmt(summary.total_overdue)} MAD`}
-                accent="text-rose-400"
+                accent="text-rose"
                 sub="Montants non réglés au-delà de l'échéance"
               />
             </div>
           )}
 
           {/* Filters */}
-          <div className="mb-4 rounded-2xl bg-slate-800 p-4 shadow-lg shadow-black/20 ring-1 ring-slate-700/60">
+          <div className="mb-4 rounded-2xl bg-panel p-4 shadow-lg shadow-black/5 ring-1 ring-line/60">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Recherche</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Recherche</label>
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="N° facture…" className={`${inputCls} w-full`} />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Client</label>
                 <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} className={`${inputCls} w-full`}>
                   <option value="">Tous les clients</option>
                   {clientOptions.map((c) => (
@@ -383,15 +383,15 @@ export default function Facturation() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Du</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Du</label>
                 <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={`${inputCls} w-full`} />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Au</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Au</label>
                 <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={`${inputCls} w-full`} />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Statut</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Statut</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -406,15 +406,15 @@ export default function Facturation() {
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400">Filtres rapides :</span>
+              <span className="text-xs text-dim">Filtres rapides :</span>
               {PAY_STATUS_CHIPS.filter((s) => s.key).map((s) => (
                 <button
                   key={s.key}
                   onClick={() => setStatusFilter(s.key === statusFilter ? "" : s.key)}
                   className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 transition ${
                     statusFilter === s.key
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 ring-transparent"
-                      : "bg-slate-900 text-slate-400 ring-slate-700 hover:text-white"
+                      ? "bg-gradient-to-r from-amber to-copper text-ink ring-transparent"
+                      : "bg-raise text-dim ring-line hover:text-frost"
                   }`}
                 >
                   {s.label}
@@ -427,31 +427,31 @@ export default function Facturation() {
           {loadingInvoices ? (
             <div className="space-y-2">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-800 ring-1 ring-slate-700/60" />
+                <div key={i} className="h-16 animate-pulse rounded-2xl bg-panel ring-1 ring-line/60" />
               ))}
             </div>
           ) : invoices.length === 0 ? (
-            <div className="rounded-2xl bg-slate-800 px-6 py-14 text-center ring-1 ring-slate-700/60">
-              <p className="font-display text-lg font-bold text-white">Aucune facture</p>
-              <p className="mt-1 text-sm text-slate-400">
+            <div className="rounded-2xl bg-panel px-6 py-14 text-center ring-1 ring-line/60">
+              <p className="font-display text-lg font-bold text-frost">Aucune facture</p>
+              <p className="mt-1 text-sm text-dim">
                 Facturez des bons de livraison livrés pour alimenter le registre.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl bg-slate-800 shadow-lg shadow-black/20 ring-1 ring-slate-700/60">
+            <div className="overflow-x-auto rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line/60">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-700 bg-slate-900/60">
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Facture</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Date</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total HT</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Payé</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Reste</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Échéance</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Statut</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">BL</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
+                  <tr className="border-b border-line bg-raise/60">
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Facture</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Client</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Date</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Total HT</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Payé</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Reste</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Échéance</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Statut</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">BL</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -475,11 +475,11 @@ export default function Facturation() {
 
       {tab === "regroupement" && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl bg-slate-800 shadow-lg shadow-black/20 ring-1 ring-slate-700/60">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 p-4">
+          <div className="lg:col-span-2 rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line/60">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
               <div>
-                <h2 className="font-display text-lg font-bold text-white">Bons de livraison facturables</h2>
-                <p className="text-xs text-slate-400">Sélectionnez les BL non encore facturés à regrouper en une facture mensuelle.</p>
+                <h2 className="font-display text-lg font-bold text-frost">Bons de livraison facturables</h2>
+                <p className="text-xs text-dim">Sélectionnez les BL non encore facturés à regrouper en une facture mensuelle.</p>
               </div>
               <select value={unbilledClient} onChange={(e) => setUnbilledClient(e.target.value)} className={inputCls}>
                 <option value="">Tous les clients</option>
@@ -492,37 +492,37 @@ export default function Facturation() {
             </div>
             {unbilled.length === 0 ? (
               <div className="px-6 py-14 text-center">
-                <p className="font-display text-lg font-bold text-white">Aucun BL à facturer</p>
-                <p className="mt-1 text-sm text-slate-400">Tous les bons de livraison ont déjà été regroupés en facture.</p>
+                <p className="font-display text-lg font-bold text-frost">Aucun BL à facturer</p>
+                <p className="mt-1 text-sm text-dim">Tous les bons de livraison ont déjà été regroupés en facture.</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-700/60">
+              <div className="divide-y divide-line">
                 {unbilled.map((b) => (
                   <label
                     key={b.id}
-                    className="flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-slate-900/40"
+                    className="flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-raise"
                   >
                     <input
                       type="checkbox"
                       checked={selected.has(b.id)}
                       onChange={() => toggleSelect(b.id)}
-                      className="h-4 w-4 accent-amber-500"
+                      className="h-4 w-4 accent-amber"
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-white">{b.bl_number}</span>
-                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-slate-400 ring-1 ring-slate-700">
+                        <span className="font-mono text-sm font-semibold text-frost">{b.bl_number}</span>
+                        <span className="rounded-full bg-raise px-2 py-0.5 text-[10px] font-semibold text-dim ring-1 ring-line">
                           {b.status}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs text-slate-400">
+                      <p className="mt-0.5 text-xs text-dim">
                         {b.client} · {b.warehouse} · {fmtDate(b.order_date)} · {b.item_count} ligne(s)
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-slate-400">Volume</p>
-                      <p className="font-display text-sm font-bold text-amber-400">{fmt(b.total_volume_m3, 3)} m³</p>
-                      <p className="text-xs text-slate-400">{fmt(b.total_amount)} MAD</p>
+                      <p className="text-xs text-dim">Volume</p>
+                      <p className="font-display text-sm font-bold text-amber">{fmt(b.total_volume_m3, 3)} m³</p>
+                      <p className="text-xs text-dim">{fmt(b.total_amount)} MAD</p>
                     </div>
                   </label>
                 ))}
@@ -530,18 +530,18 @@ export default function Facturation() {
             )}
           </div>
 
-          <div className="rounded-2xl bg-slate-800 p-4 shadow-lg shadow-black/20 ring-1 ring-slate-700/60 lg:sticky lg:top-24 lg:self-start">
-            <h2 className="font-display text-lg font-bold text-white">Créer la facture</h2>
-            <p className="mt-1 text-xs text-slate-400">
+          <div className="rounded-2xl bg-panel p-4 shadow-lg shadow-black/5 ring-1 ring-line/60 lg:sticky lg:top-24 lg:self-start">
+            <h2 className="font-display text-lg font-bold text-frost">Créer la facture</h2>
+            <p className="mt-1 text-xs text-dim">
               {selected.size} BL sélectionnés · {fmt(selectedTotal)} MAD HT
             </p>
             <div className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Date de facture</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Date de facture</label>
                 <input type="date" value={groupDate} onChange={(e) => setGroupDate(e.target.value)} className={`${inputCls} w-full`} />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Notes</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Notes</label>
                 <textarea
                   value={groupNotes}
                   onChange={(e) => setGroupNotes(e.target.value)}
@@ -561,7 +561,7 @@ export default function Facturation() {
       {tab === "avoirs" && (
         <>
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-slate-400">{avoirs.length} avoir(s) émis</p>
+            <p className="text-sm text-dim">{avoirs.length} avoir(s) émis</p>
             <button onClick={() => setAvoirOpen(true)} className={btnPrimary}>
               + Émettre un avoir
             </button>
@@ -569,47 +569,47 @@ export default function Facturation() {
           {loadingAvoirs ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-800 ring-1 ring-slate-700/60" />
+                <div key={i} className="h-16 animate-pulse rounded-2xl bg-panel ring-1 ring-line/60" />
               ))}
             </div>
           ) : avoirs.length === 0 ? (
-            <div className="rounded-2xl bg-slate-800 px-6 py-14 text-center ring-1 ring-slate-700/60">
-              <p className="font-display text-lg font-bold text-white">Aucun avoir</p>
-              <p className="mt-1 text-sm text-slate-400">
+            <div className="rounded-2xl bg-panel px-6 py-14 text-center ring-1 ring-line/60">
+              <p className="font-display text-lg font-bold text-frost">Aucun avoir</p>
+              <p className="mt-1 text-sm text-dim">
                 Émettez une Facture d'Avoir pour la marchandise retournée ou une remise commerciale.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl bg-slate-800 shadow-lg shadow-black/20 ring-1 ring-slate-700/60">
+            <div className="overflow-x-auto rounded-2xl bg-panel shadow-lg shadow-black/5 ring-1 ring-line/60">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-700 bg-slate-900/60">
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">N° Avoir</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Date</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Facture d'origine</th>
-                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Motif</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Montant HT</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">TTC</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Appliqué</th>
-                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-400">Actions</th>
+                  <tr className="border-b border-line bg-raise/60">
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">N° Avoir</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Date</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Client</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Facture d'origine</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-dim">Motif</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Montant HT</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">TTC</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Appliqué</th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-dim">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {avoirs.map((cn) => (
-                    <tr key={cn.id} className="border-b border-slate-700/50 transition hover:bg-slate-900/40">
-                      <td className="px-4 py-3 font-mono text-xs font-semibold text-white">{cn.credit_note_number}</td>
-                      <td className="px-4 py-3 text-slate-400">{fmtDate(cn.created_date)}</td>
-                      <td className="px-4 py-3 text-slate-200">{cn.client}</td>
-                      <td className="px-4 py-3 text-xs text-slate-400">{cn.sales_order_ref || "—"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300">{cn.reason_label}</td>
-                      <td className="px-4 py-3 text-right text-slate-200">{fmt(cn.amount)}</td>
-                      <td className="px-4 py-3 text-right text-slate-200">{fmt(cn.amount_ttc)}</td>
-                      <td className="px-4 py-3 text-right text-amber-400">{fmt(cn.applied_amount)}</td>
+                    <tr key={cn.id} className="border-b border-line/50 transition hover:bg-raise">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-frost">{cn.credit_note_number}</td>
+                      <td className="px-4 py-3 text-dim">{fmtDate(cn.created_date)}</td>
+                      <td className="px-4 py-3 text-frost">{cn.client}</td>
+                      <td className="px-4 py-3 text-xs text-dim">{cn.sales_order_ref || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-ash">{cn.reason_label}</td>
+                      <td className="px-4 py-3 text-right text-frost">{fmt(cn.amount)}</td>
+                      <td className="px-4 py-3 text-right text-frost">{fmt(cn.amount_ttc)}</td>
+                      <td className="px-4 py-3 text-right text-amber">{fmt(cn.applied_amount)}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => printAvoir(cn)}
-                          className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
+                          className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ash transition hover:bg-raise hover:text-frost"
                         >
                           🖨 PDF
                         </button>
@@ -625,12 +625,12 @@ export default function Facturation() {
 
       {avoirOpen && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-4" onClick={() => setAvoirOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-slate-800 p-6 shadow-2xl ring-1 ring-slate-700" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display text-lg font-bold text-white">Émettre un avoir</h2>
-            <p className="mt-0.5 text-xs text-slate-400">Crédite le client et réduit le solde de la facture liée.</p>
+          <div className="w-full max-w-md rounded-2xl bg-panel p-6 shadow-2xl ring-1 ring-line" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-lg font-bold text-frost">Émettre un avoir</h2>
+            <p className="mt-0.5 text-xs text-dim">Crédite le client et réduit le solde de la facture liée.</p>
             <div className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Client</label>
                 <select
                   value={avoirForm.client_id}
                   onChange={(e) => setAvoirForm((f) => ({ ...f, client_id: e.target.value, sales_order_id: "" }))}
@@ -645,7 +645,7 @@ export default function Facturation() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Facture d'origine</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Facture d'origine</label>
                 <select
                   value={avoirForm.sales_order_id}
                   onChange={(e) => setAvoirForm((f) => ({ ...f, sales_order_id: e.target.value }))}
@@ -660,7 +660,7 @@ export default function Facturation() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Motif</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Motif</label>
                 <select
                   value={avoirForm.reason}
                   onChange={(e) => setAvoirForm((f) => ({ ...f, reason: e.target.value }))}
@@ -672,7 +672,7 @@ export default function Facturation() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Montant (MAD HT)</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Montant (MAD HT)</label>
                 <input
                   type="number"
                   min="0"
@@ -684,7 +684,7 @@ export default function Facturation() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400">Notes</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-dim">Notes</label>
                 <textarea
                   value={avoirForm.notes}
                   onChange={(e) => setAvoirForm((f) => ({ ...f, notes: e.target.value }))}
@@ -711,23 +711,23 @@ export default function Facturation() {
 function ExpandableRow({ so, expanded, onToggle, onPdf, onWhatsapp, onEmail }) {
   return (
     <>
-      <tr className="border-b border-slate-700/50 transition hover:bg-slate-900/40">
+      <tr className="border-b border-line/50 transition hover:bg-raise">
         <td className="px-4 py-3">
           <button onClick={onToggle} className="flex items-center gap-2 text-left">
-            <span className={`text-xs text-slate-500 transition ${expanded ? "rotate-90" : ""}`}>▶</span>
-            <span className="font-mono text-xs font-semibold text-white">{so.so_number}</span>
+            <span className={`text-xs text-dim transition ${expanded ? "rotate-90" : ""}`}>▶</span>
+            <span className="font-mono text-xs font-semibold text-frost">{so.so_number}</span>
           </button>
         </td>
-        <td className="px-4 py-3 text-slate-200">{so.client}</td>
-        <td className="px-4 py-3 text-slate-400">{fmtDate(so.order_date)}</td>
-        <td className="px-4 py-3 text-right text-slate-200">{fmt(so.total_amount)}</td>
-        <td className="px-4 py-3 text-right text-slate-400">{fmt(so.paid_amount)}</td>
-        <td className="px-4 py-3 text-right font-semibold text-amber-400">{fmt(so.balance_due)}</td>
-        <td className="px-4 py-3 text-xs text-slate-400">{fmtDate(so.due_date)}</td>
+        <td className="px-4 py-3 text-frost">{so.client}</td>
+        <td className="px-4 py-3 text-dim">{fmtDate(so.order_date)}</td>
+        <td className="px-4 py-3 text-right text-frost">{fmt(so.total_amount)}</td>
+        <td className="px-4 py-3 text-right text-dim">{fmt(so.paid_amount)}</td>
+        <td className="px-4 py-3 text-right font-semibold text-amber">{fmt(so.balance_due)}</td>
+        <td className="px-4 py-3 text-xs text-dim">{fmtDate(so.due_date)}</td>
         <td className="px-4 py-3">
           <PayBadge status={so.payment_status} />
         </td>
-        <td className="px-4 py-3 text-xs text-slate-400">
+        <td className="px-4 py-3 text-xs text-dim">
           {(so.delivery_notes || []).map((d) => d.bl_number).join(", ") || "—"}
         </td>
         <td className="px-4 py-3">
@@ -735,21 +735,21 @@ function ExpandableRow({ so, expanded, onToggle, onPdf, onWhatsapp, onEmail }) {
             <button
               onClick={onPdf}
               title="Facture PDF"
-              className="rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
+              className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ash transition hover:bg-raise hover:text-frost"
             >
               🖨
             </button>
             <button
               onClick={onWhatsapp}
               title="Relance WhatsApp"
-              className="rounded-lg border border-emerald-500/40 px-2.5 py-1.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+              className="rounded-lg border border-jade/40 px-2.5 py-1.5 text-xs font-semibold text-jade transition hover:bg-jade/10"
             >
               ✆
             </button>
             <button
               onClick={onEmail}
               title="Relance e-mail"
-              className="rounded-lg border border-sky-400/40 px-2.5 py-1.5 text-xs font-semibold text-sky-300 transition hover:bg-sky-400/10"
+              className="rounded-lg border border-skyx/40 px-2.5 py-1.5 text-xs font-semibold text-skyx transition hover:bg-skyx/10"
             >
               ✉
             </button>
@@ -757,30 +757,30 @@ function ExpandableRow({ so, expanded, onToggle, onPdf, onWhatsapp, onEmail }) {
         </td>
       </tr>
       {expanded && (
-        <tr className="border-b border-slate-700/50 bg-slate-900/30">
+        <tr className="border-b border-line/50 bg-raise/50">
           <td colSpan={10} className="px-6 py-4">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <div>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Lignes de la facture</p>
-                <div className="overflow-hidden rounded-xl ring-1 ring-slate-700">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-dim">Lignes de la facture</p>
+                <div className="overflow-hidden rounded-xl ring-1 ring-line">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-slate-700 bg-slate-800">
-                        <th className="px-3 py-2 font-semibold text-slate-400">Produit</th>
-                        <th className="px-3 py-2 text-right font-semibold text-slate-400">Qté</th>
-                        <th className="px-3 py-2 text-right font-semibold text-slate-400">m³</th>
-                        <th className="px-3 py-2 text-right font-semibold text-slate-400">PU</th>
-                        <th className="px-3 py-2 text-right font-semibold text-slate-400">Total</th>
+                      <tr className="border-b border-line bg-panel">
+                        <th className="px-3 py-2 font-semibold text-dim">Produit</th>
+                        <th className="px-3 py-2 text-right font-semibold text-dim">Qté</th>
+                        <th className="px-3 py-2 text-right font-semibold text-dim">m³</th>
+                        <th className="px-3 py-2 text-right font-semibold text-dim">PU</th>
+                        <th className="px-3 py-2 text-right font-semibold text-dim">Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(so.items || []).map((it) => (
-                        <tr key={it.id} className="border-b border-slate-700/40">
-                          <td className="px-3 py-2 text-slate-200">{it.product}</td>
-                          <td className="px-3 py-2 text-right text-slate-400">{fmt(it.quantity_shipped)}</td>
-                          <td className="px-3 py-2 text-right text-slate-400">{fmt(it.volume_m3, 3)}</td>
-                          <td className="px-3 py-2 text-right text-slate-400">{fmt(it.unit_price)}</td>
-                          <td className="px-3 py-2 text-right font-semibold text-slate-200">{fmt(it.line_total)}</td>
+                        <tr key={it.id} className="border-b border-line/40">
+                          <td className="px-3 py-2 text-frost">{it.product}</td>
+                          <td className="px-3 py-2 text-right text-dim">{fmt(it.quantity_shipped)}</td>
+                          <td className="px-3 py-2 text-right text-dim">{fmt(it.volume_m3, 3)}</td>
+                          <td className="px-3 py-2 text-right text-dim">{fmt(it.unit_price)}</td>
+                          <td className="px-3 py-2 text-right font-semibold text-frost">{fmt(it.line_total)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -789,37 +789,37 @@ function ExpandableRow({ so, expanded, onToggle, onPdf, onWhatsapp, onEmail }) {
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Avoirs liés</p>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-dim">Avoirs liés</p>
                   {(so.avoirs || []).length === 0 ? (
-                    <p className="text-xs text-slate-500">Aucun avoir.</p>
+                    <p className="text-xs text-dim">Aucun avoir.</p>
                   ) : (
                     <ul className="space-y-1">
                       {(so.avoirs || []).map((a) => (
-                        <li key={a.id} className="flex items-center justify-between rounded-lg bg-slate-900/50 px-3 py-1.5 text-xs ring-1 ring-slate-700/60">
-                          <span className="font-mono text-slate-300">{a.credit_note_number}</span>
-                          <span className="text-slate-400">{a.reason_label}</span>
-                          <span className="font-semibold text-amber-400">−{fmt(a.applied_amount)}</span>
+                        <li key={a.id} className="flex items-center justify-between rounded-lg bg-raise/70 px-3 py-1.5 text-xs ring-1 ring-line/60">
+                          <span className="font-mono text-ash">{a.credit_note_number}</span>
+                          <span className="text-dim">{a.reason_label}</span>
+                          <span className="font-semibold text-amber">−{fmt(a.applied_amount)}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-                <div className="rounded-xl bg-slate-900/50 p-3 text-xs ring-1 ring-slate-700/60">
-                  <p className="flex justify-between text-slate-400">
+                <div className="rounded-xl bg-raise/70 p-3 text-xs ring-1 ring-line/60">
+                  <p className="flex justify-between text-dim">
                     <span>Total HT</span>
-                    <span className="text-slate-200">{fmt(so.total_amount)} MAD</span>
+                    <span className="text-frost">{fmt(so.total_amount)} MAD</span>
                   </p>
-                  <p className="flex justify-between text-slate-400">
+                  <p className="flex justify-between text-dim">
                     <span>TVA 20 %</span>
-                    <span className="text-slate-200">{fmt(so.total_amount * 0.2)} MAD</span>
+                    <span className="text-frost">{fmt(so.total_amount * 0.2)} MAD</span>
                   </p>
-                  <p className="flex justify-between border-t border-slate-700 pt-1 font-semibold text-white">
+                  <p className="flex justify-between border-t border-line pt-1 font-semibold text-frost">
                     <span>Total TTC</span>
                     <span>{fmt(so.total_amount * 1.2)} MAD</span>
                   </p>
-                  <p className="mt-1 flex justify-between text-slate-400">
+                  <p className="mt-1 flex justify-between text-dim">
                     <span>Reste à régler (TTC)</span>
-                    <span className="text-amber-400">{fmt(so.balance_due * 1.2)} MAD</span>
+                    <span className="text-amber">{fmt(so.balance_due * 1.2)} MAD</span>
                   </p>
                 </div>
               </div>

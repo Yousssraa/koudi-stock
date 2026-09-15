@@ -12,7 +12,7 @@ from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -1757,7 +1757,7 @@ class InvoiceListView(APIView):
     (InvoiceSerializer rows) and ``summary`` (counts + totals per status).
     """
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         qs = _invoiced_orders_qs()
@@ -1804,7 +1804,7 @@ class InvoiceListView(APIView):
 class InvoiceDetailView(APIView):
     """GET /api/invoices/<pk>/ → one invoice document (with BLs + avoirs)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         so = _invoiced_orders_qs().filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
@@ -1816,7 +1816,7 @@ class InvoiceDetailView(APIView):
 class InvoicePdfView(APIView):
     """GET /api/invoices/<pk>/pdf/ → official A4 invoice (TVA 20 %, net à payer)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         so = _invoiced_orders_qs().filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
@@ -1829,7 +1829,7 @@ class InvoicePdfView(APIView):
 class InvoiceWhatsAppReminderView(APIView):
     """GET /api/invoices/<pk>/reminder/whatsapp/ → pre-filled wa.me deep link."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         so = SalesOrder.objects.filter(pk=pk, status__in=services._SHIPPED_STATUSES).first()
@@ -1841,7 +1841,7 @@ class InvoiceWhatsAppReminderView(APIView):
 class InvoiceEmailReminderView(APIView):
     """POST /api/invoices/<pk>/reminder/email/ → automated SMTP reminder."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def post(self, request, pk=None):
@@ -1856,7 +1856,7 @@ class InvoiceEmailReminderView(APIView):
 class InvoiceExportView(APIView):
     """GET /api/invoices/export/?client=&from=&to=&status= → comptable CSV (SAGE/Ciel)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         client = None
@@ -1878,7 +1878,7 @@ class InvoiceExportView(APIView):
 class UnbilledDeliveryNotesView(APIView):
     """GET /api/invoices/unbilled-bl/?client=<id> → BLs available for grouped invoicing."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         qs = DeliveryNote.objects.filter(invoice__isnull=True).exclude(
@@ -1911,7 +1911,7 @@ class GroupedInvoiceView(APIView):
             "notes"?: "...", "order_date"?: "YYYY-MM-DD" }
     """
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def post(self, request):
@@ -1948,7 +1948,7 @@ class GroupedInvoiceView(APIView):
 class CreditNoteListCreateView(APIView):
     """GET /api/credit-notes/ (?client=) | POST /api/credit-notes/ → emit an Avoir."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
     def get(self, request):
@@ -1993,7 +1993,7 @@ class CreditNoteListCreateView(APIView):
 class CreditNotePdfView(APIView):
     """GET /api/credit-notes/<pk>/pdf/ → Facture d'Avoir A4 PDF."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, pk=None):
         cn = CreditNote.objects.select_related("client", "sales_order").filter(pk=pk).first()
