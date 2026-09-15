@@ -153,16 +153,17 @@ Photos de la page Actualités.
 | Fichier | Article / usage |
 | --- | --- |
 | `actu-hetre-calvi.jpg` | Nouvel arrivage Hêtre Calvi |
-| `actu-coffrage.jpg` | Solutions de coffrage |
+| `actu-coffrage.webp` | Solutions de coffrage |
 | `actu-sveza.jpg` | Bakélisé SVEZA |
+| `actu-chantiers-automne.webp` | Les Chantiers d'Automne |
+| `actu-parquet-automne.webp` | Chaleur, Élégance, Parquet : l'Automne signé KOUDI WOOD |
+| `chene.webp` | L'Élégance du Bois, la Force du Chêne |
 
 Les autres articles de la page sont illustrés par des photos contextualisées de
 **Wikimedia Commons** (vérifiées via l'API : auteur, licence, type `image/jpeg`).
 
 | Fichier | Article / usage | Auteur | Licence |
 | --- | --- | --- | --- |
-| `actu-chantiers-automne.jpg` | Les Chantiers d'Automne (réserve de troncs bois) | Kritzolina | CC BY-SA 4.0 |
-| `actu-parquet-automne.jpg` | Chaleur, Élégance, Parquet (parquet lames hickory) | Loadmaster (David R. Tribble) | CC BY-SA 3.0 |
 | `actu-printemps.jpg` | Le Printemps fait germer vos projets (piles de bois) | John Winder | CC BY-SA 2.0 |
 | `actu-stenvalls.jpg` | Bois rouge Stenvalls (rondins de pin sylvestre) | Radomianin | CC BY-SA 4.0 |
 | `actu-carrefour.jpg` | Carrefour International du Bois (hall foire du bois de Bâle, 1953) | Willy Pragher | CC BY 4.0 |
