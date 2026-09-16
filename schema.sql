@@ -341,8 +341,7 @@ BEGIN
     SELECT quantity INTO current_qty
     FROM inventory
     WHERE product_id = NEW.product_id AND warehouse_id = NEW.warehouse_id
-    FOR UPDATE;
-
+FOR UPDATE
     IF current_qty IS NULL THEN
         IF delta < 0 THEN
             RAISE EXCEPTION 'Insufficient stock: product % has no stock in warehouse % (movement %).',
