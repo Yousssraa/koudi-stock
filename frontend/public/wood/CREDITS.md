@@ -153,10 +153,10 @@ Photos de la page Actualités.
 | Fichier | Article / usage |
 | --- | --- |
 | `actu-hetre-calvi.jpg` | Nouvel arrivage Hêtre Calvi |
-| `actu-coffrage.webp` | Solutions de coffrage |
+| `actu-coffrage.webp` | Solutions de coffrage — aperçu Bing (URL fournie par le client) |
 | `actu-sveza.jpg` | Bakélisé SVEZA |
 | `actu-chantiers-automne.webp` | Les Chantiers d'Automne |
-| `actu-parquet-automne.webp` | Chaleur, Élégance, Parquet : l'Automne signé KOUDI WOOD |
+| `actu-parquet-automne.webp` | Chaleur, Élégance, Parquet : l'Automne signé KOUDI WOOD — aperçu Bing (URL fournie par le client) |
 | `chene.webp` | L'Élégance du Bois, la Force du Chêne |
 
 Les autres articles de la page sont illustrés par des photos contextualisées de
